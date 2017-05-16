@@ -5,7 +5,7 @@
     "auth"        : "github:p6-pdf",
     "description" : "PDF Rendering backend for the HTML Canvas (2D) API",
     "depends"     : [ "JSON::Fast", "PDF", "PDF::Content", "PDF::Style::Font", "Color" ],
-    "source-url"  : "git://github.com/p6-pdf/HTML-Canvas-p6.git",
+    "source-url"  : "git://github.com/p6-pdf/HTML-CanvasTo-PDF-p6.git",
     "provides"    : {
         "HTML::Canvas::To::PDF"  : "lib/HTML/Canvas/To/PDF.pm"
      }
