@@ -446,14 +446,15 @@ test-page( -> \ctx {
       $y += textHeight + pad;
 
       ctx.beginPath();
-      ctx.fillStyle = 'rgba(255,200,200,.5)';
+      ctx.fillStyle = 'rgba(255,25,25,.5)';
       ctx.fillRect(10, $y, 100, 50);
       ctx.rect(50, $y+20, 100, 50);
       ctx.stroke();
       ctx.clip();
-      # Fill another rectangle after clip()
-      ctx.fillStyle = 'rgba(200,255,200,.5)';
+      # Fill other rectangles after clip()
+      ctx.fillStyle = 'rgba(25,255,25,.5)';
       ctx.fillRect(10, $y, 100, 50);
+      ctx.fillRect(90, $y+40, 100, 50);
 });
 
 test-page( -> \ctx {
