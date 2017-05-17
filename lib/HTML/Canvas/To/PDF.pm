@@ -81,6 +81,8 @@ class HTML::Canvas::To::PDF {
         # This translation lets us map HTML coordinates to PDF
         # by negating Y - see !coords method above
         $!gfx.transform: :translate[0, $!height];
+	# initialize settings; just those where HTML and PDF defaults differ
+	self.lineJoin($canvas.lineJoin);
     }
     method _finish {
         $!gfx.Restore;

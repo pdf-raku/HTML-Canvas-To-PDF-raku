@@ -34,7 +34,7 @@ $canvas.context: -> \ctx {
         dies-ok  { ctx.foo(42) }, "unknown call - dies";
 
         is-deeply $feed.content-dump.grep(* !~~ /^'%'/), $(
-	    "q", "0 0 612 792 re", "h", "W", "n", "1 0 0 1 0 792 cm", "q",
+	    "q", "0 0 612 792 re", "h", "W", "n", "1 0 0 1 0 792 cm", "2 j", "q",
 	    "0 0 0 RG", "1 -791 610 790 re", "s", "20 -40 10 20 re", "s",
 	    "2 0 0 2 0 0 cm", "1 0 0 1 -5 15 cm", "20 -40 10 20 re", "s"), 'content to-date';
 

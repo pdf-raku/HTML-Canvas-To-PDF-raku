@@ -1,5 +1,7 @@
 # perl6-HTML-Canvas-To-PDF
 
+This is a PDF rendering backend for HTML::Canvas. A canvas may be rendered to either
+a page, or an XObject form.
 
 ```
 use v6;
