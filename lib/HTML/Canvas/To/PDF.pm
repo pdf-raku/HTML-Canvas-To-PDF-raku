@@ -2,7 +2,7 @@ use v6;
 class HTML::Canvas::To::PDF {
 
     use Color;
-    use HTML::Canvas;
+    use HTML::Canvas:ver(v0.0.1..*);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use PDF:ver(v0.2.1..*);
@@ -227,7 +227,7 @@ class HTML::Canvas::To::PDF {
             }
         };
 
-        my ($ShadingType, @Coords) = do given $gradient.type {
+        my ($ShadingType, $Coords) = do given $gradient.type {
             when 'Linear' {
                 (Axial,
 		 [.x0, .y1, .x1, .y0] with $gradient);
@@ -245,7 +245,7 @@ class HTML::Canvas::To::PDF {
              !! ()),
             :ColorSpace( :name<DeviceRGB> ),
             :Domain[0, 1],
-            :@Coords,
+            :$Coords,
             :$Function,
             :Extend[True, True],
         };
@@ -288,6 +288,7 @@ class HTML::Canvas::To::PDF {
     method lineWidth(Numeric $width) {
         $!gfx.LineWidth = $width;
     }
+    method globalAlpha(Numeric) { }
     method lineCap(HTML::Canvas::LineCap $cap-name) {
         my LineCaps $lc = %( :butt(ButtCaps), :round(RoundCaps),  :square(SquareCaps)){$cap-name};
         $!gfx.LineCap = $lc;
@@ -349,10 +350,14 @@ class HTML::Canvas::To::PDF {
         };
     }
     my subset CanvasOrXObject where HTML::Canvas|Hash;
-    multi method drawImage( CanvasOrXObject $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
+    multi method drawImage( CanvasOrXObject $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh, :$canvas!) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
-
+            my $ga = $canvas.globalAlpha;
+	    unless $ga =~= 1 {
+		$!gfx.StrokeAlpha *= $ga;
+		$!gfx.FillAlpha *= $ga;
+	    }
             # position at top right of visible area
             $!gfx.transform: :translate(self!coords(dx, dy));
             # clip to visible area
@@ -388,7 +393,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.Restore;
         }
     }
-    multi method drawImage(CanvasOrXObject $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
+    multi method drawImage(CanvasOrXObject $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?, :$canvas!) is default {
         my $xobject;
         if $image.isa(HTML::Canvas) {
             my $width = $image.html-width // $dw;
@@ -403,7 +408,17 @@ class HTML::Canvas::To::PDF {
         %opt<width>  = $_ with $dw;
         %opt<height> = $_ with $dh;
 
+        my $ga = $canvas.globalAlpha;
+	unless $ga =~= 1 {
+	    $!gfx.Save;
+	    $!gfx.StrokeAlpha *= $ga;
+	    $!gfx.FillAlpha *= $ga;
+	}
+
         $!gfx.do($xobject, |self!coords($dx, $dy), |%opt);
+
+	$!gfx.Restore
+	    unless $ga =~= 1;
     }
     method getLineDash() {}
     method setLineDash(List $pattern, :$canvas) {

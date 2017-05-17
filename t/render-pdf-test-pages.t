@@ -530,6 +530,7 @@ test-page( -> \ctx {
       ctx.drawImage(image,  10, 10, 240, 220,
                            220, $y, 200, 200);
       $y += 200 + pad;
+      ctx.globalAlpha = 0.5;
       ctx.drawImage(image, 20, $y);
       $y += 200 + pad;
 });
