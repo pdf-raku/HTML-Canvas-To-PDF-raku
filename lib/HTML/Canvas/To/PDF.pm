@@ -12,17 +12,18 @@ class HTML::Canvas::To::PDF {
     use PDF::Style::Font:ver(v0.0.1..*);
     use PDF::Content::Util::TransformMatrix;
 
+    has HTML::Canvas $.canvas .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
     has $.width;  # canvas width in points
     has $.height; # canvas height in points
 
-    submethod TWEAK(:$canvas) {
+    submethod TWEAK {
         with $!gfx.parent {
             $!width  //= .width;
             $!height //= .height;
         }
 
-        with $canvas {
+        with $!canvas {
             .font-object //= PDF::Style::Font.new;
             .callback.push: self.callback;
         }
@@ -70,8 +71,8 @@ class HTML::Canvas::To::PDF {
 	$!gfx.ConcatMatrix( @tm );
     }
 
-    method _start(:$canvas) {
-        $canvas.font-object //= PDF::Style::Font.new;
+    method _start {
+        $!canvas.font-object //= PDF::Style::Font.new;
         $!gfx.Save;
         # clip graphics to outsde of canvas
         $!gfx.Rectangle(0, 0, pt($!width), pt($!height) );
@@ -82,7 +83,7 @@ class HTML::Canvas::To::PDF {
         # by negating Y - see !coords method above
         $!gfx.transform: :translate[0, $!height];
 	# initialize settings; just those where HTML and PDF defaults differ
-	self.lineJoin($canvas.lineJoin);
+	self.lineJoin($!canvas.lineJoin);
     }
     method _finish {
         $!gfx.Restore;
@@ -137,7 +138,7 @@ class HTML::Canvas::To::PDF {
         $!gfx.Clip;
         $!gfx.EndPath;
     }
-    method fillStyle(HTML::Canvas::ColorSpec $_, :$canvas!) {
+    method fillStyle(HTML::Canvas::ColorSpec $_) {
         when HTML::Canvas::Pattern {
             $!gfx.FillAlpha = 1.0;
             $!gfx.FillColor = self!make-pattern($_);
@@ -147,7 +148,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.FillColor = self!make-gradient($_);
         }
         default {
-            with $canvas.css.background-color {
+            with $!canvas.css.background-color {
                 $!gfx.FillColor = :DeviceRGB[ .rgb.map: ( */255 ) ];
                 $!gfx.FillAlpha = .a / 255;
             }
@@ -271,7 +272,7 @@ class HTML::Canvas::To::PDF {
             :$Pattern;
         }
     }
-    method strokeStyle(HTML::Canvas::ColorSpec $_, :$canvas!) {
+    method strokeStyle(HTML::Canvas::ColorSpec $_) {
         when HTML::Canvas::Pattern {
             $!gfx.StrokeAlpha = 1.0;
             $!gfx.StrokeColor = self!make-pattern($_);
@@ -281,7 +282,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.StrokeColor = self!make-gradient($_);
         }
         default {
-            with $canvas.css.color {
+            with $!canvas.css.color {
                 $!gfx.StrokeColor = :DeviceRGB[ .rgb.map: ( */255 ) ];
                 $!gfx.StrokeAlpha = .a / 255;
             }
@@ -299,47 +300,47 @@ class HTML::Canvas::To::PDF {
         my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$cap-name};
         $!gfx.LineJoin = $lj;
     }
-    method !text(Str $text, Numeric $x, Numeric $y, :$canvas!, Numeric :$maxWidth) {
-        my Numeric $scale;
+    method !text(Str $text, Numeric $x, Numeric $y, Numeric :$maxWidth) {
+        my Numeric $scale = 100;
         if $maxWidth {
-            my \width = $canvas.measureText($text).width;
+            my \width = $!canvas.measureText($text).width;
             $scale = 100 * $maxWidth / width
                 if width > $maxWidth;
         }
 
         $!gfx.BeginText;
-        $!gfx.HorizScaling = $_ with $scale;
+        $!gfx.HorizScaling = $scale;
         $!gfx.text-position = self!coords($x, $y);
-        my HTML::Canvas::Baseline $baseline = $canvas.textBaseline;
-        my HTML::Canvas::TextAlignment $align = do given $canvas.textAlign {
-            when 'start' { $canvas.direction eq 'ltr' ?? 'left' !! 'right' }
-            when 'end'   { $canvas.direction eq 'rtl' ?? 'left' !! 'right' }
+        my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
+        my HTML::Canvas::TextAlignment $align = do given $!canvas.textAlign {
+            when 'start' { $!canvas.direction eq 'ltr' ?? 'left' !! 'right' }
+            when 'end'   { $!canvas.direction eq 'rtl' ?? 'left' !! 'right' }
             default { $_ }
         }
 
         $!gfx.print($text, :$align, :$baseline);
         $!gfx.EndText;
     }
-    method font(Str $font-style, :$canvas!) {
-        my \canvas-font = $canvas.font-object;
+    method font(Str $font-style) {
+        my \canvas-font = $!canvas.font-object;
         my \pdf-font = $!gfx.use-font(canvas-font.face);
-        $!gfx.font = [ pdf-font, $canvas.adjusted-font-size(canvas-font.em) ];
+        $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size(canvas-font.em) ];
     }
     method textBaseline(Str $_) {}
     method textAlign(Str $_) {}
     method direction(Str $_) {}
-    method fillText(Str $text, Numeric $x, Numeric $y, Numeric $maxWidth?, :$canvas!) {
+    method fillText(Str $text, Numeric $x, Numeric $y, Numeric $maxWidth?) {
         $!gfx.Save;
-        self!text($text, $x, $y, :$maxWidth, :$canvas);
+        self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method strokeText(Str $text, Numeric $x, Numeric $y, Numeric $maxWidth?, :$canvas!) {
+    method strokeText(Str $text, Numeric $x, Numeric $y, Numeric $maxWidth?) {
         $!gfx.Save;
         $!gfx.TextRender = TextMode::OutlineText;
-        self!text($text, $x, $y, :$maxWidth, :$canvas);
+        self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method measureText(Str $text, :$canvas!) {
+    method measureText(Str $text) {
     }
     has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
@@ -352,10 +353,10 @@ class HTML::Canvas::To::PDF {
         };
     }
     my subset CanvasOrXObject where HTML::Canvas|Hash;
-    multi method drawImage( CanvasOrXObject $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh, :$canvas!) {
+    multi method drawImage( CanvasOrXObject $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
-            my $ga = $canvas.globalAlpha;
+            my $ga = $!canvas.globalAlpha;
 	    unless $ga =~= 1 {
 		$!gfx.StrokeAlpha *= $ga;
 		$!gfx.FillAlpha *= $ga;
@@ -395,7 +396,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.Restore;
         }
     }
-    multi method drawImage(CanvasOrXObject $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?, :$canvas!) is default {
+    multi method drawImage(CanvasOrXObject $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
         my $xobject;
         if $image.isa(HTML::Canvas) {
             my $width = $image.html-width // $dw;
@@ -410,7 +411,7 @@ class HTML::Canvas::To::PDF {
         %opt<width>  = $_ with $dw;
         %opt<height> = $_ with $dh;
 
-        my $ga = $canvas.globalAlpha;
+        my $ga = $!canvas.globalAlpha;
 	unless $ga =~= 1 {
 	    $!gfx.Save;
 	    $!gfx.StrokeAlpha *= $ga;
@@ -423,8 +424,8 @@ class HTML::Canvas::To::PDF {
 	    unless $ga =~= 1;
     }
     method getLineDash() {}
-    method setLineDash(List $pattern, :$canvas) {
-        $!gfx.SetDashPattern($pattern, $canvas.lineDashOffset)
+    method setLineDash(List $pattern) {
+        $!gfx.SetDashPattern($pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
     method moveTo(Numeric \x, Numeric \y) { $!gfx.MoveTo( |self!coords(x, y)) }
