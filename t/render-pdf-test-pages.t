@@ -16,7 +16,7 @@ my $y = 0;
 my \h = 20;
 my \pad = 10;
 my \textHeight = 20;
-my $measured-text;
+my $text-width;
 
 sub test-page(&markup) {
     my HTML::Canvas $canvas .= new;
@@ -70,7 +70,6 @@ test-page(-> \ctx {
       ctx.font = "10pt times";
       ctx.fillText("Hello PDF", 20, $y + textHeight);
       $y += textHeight + pad;
-      $measured-text = ctx.measureText("Hello PDF").width;
 
       ctx.font = "10pt courier";
       ctx.fillText("Hello PDF", 20, $y + textHeight);
@@ -169,15 +168,31 @@ test-page(-> \ctx {
       ctx.restore();
 });
 
-ok(56 < $measured-text < 58, 'MeasureText')
-    or diag "text measurement $measured-text outside of range: 56...58";
-
 test-page( -> \ctx {
       ctx.save();
-      ctx.fillText("Testing textAlign", 20, $y + textHeight);
+      ctx.fillText("Testing measureText and textAlign", 20, $y + textHeight);
       $y += 20 + pad;
-      my $y-start = $y;
       ctx.font="15px Arial"; 
+
+      my $text = "< Measured Text >";
+      ctx.fillText($text, 20, $y + textHeight);
+      $text-width = ctx.measureText($text).width;
+
+      # Create a red line before and after text
+      ctx.strokeStyle="red";
+      my $y1 = $y + pad / 2;
+      ctx.beginPath();
+      ctx.moveTo(20, $y1);
+      ctx.lineTo(20, $y1+textHeight);
+      ctx.stroke();
+  
+      ctx.beginPath();
+      ctx.moveTo(20 + $text-width, $y1);
+      ctx.lineTo(20 + $text-width, $y1+textHeight);
+      ctx.stroke();  
+
+      $y += textHeight + pad;
+      my $y-start = $y;
 
       # Show the different textAlign values
       ctx.textAlign="start"; 
@@ -281,6 +296,9 @@ test-page( -> \ctx {
       }
 
 });
+
+ok(120 < $text-width < 130, 'MeasureText')
+    or diag "text measurement $text-width outside of range: 120...130";
 
 sub deg2rad(Numeric $deg) { $deg * pi / 180 }
 

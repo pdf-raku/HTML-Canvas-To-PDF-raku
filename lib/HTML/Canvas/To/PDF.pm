@@ -340,8 +340,7 @@ class HTML::Canvas::To::PDF {
         self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method measureText(Str $text) {
-    }
+    method measureText(Str $text) {}
     has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         %!canvas-cache{ ($image.html-id, $width, $height).join('X') } //= do {
