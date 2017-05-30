@@ -48,8 +48,8 @@ class HTML::Canvas::To::PDF {
     }
 
     method callback {
-        sub ($op, |c) {
-            if self.can: "{$op}" {
+        sub (Str $op, |c) {
+            if self.can: $op {
 		self!add-pdf-comment($op, |c)
 		    unless $op ~~ /^_/;
                 self."{$op}"(|c);
@@ -159,20 +159,16 @@ class HTML::Canvas::To::PDF {
     method !make-pattern(HTML::Canvas::Pattern $pattern --> Pair) {
         my @ctm = $!gfx.CTM.list;
         %!pattern-cache{$pattern}{@ctm.Str} //= do {
-            my Bool $repeat-x = True;
-            my Bool $repeat-y = True;
-            given $pattern.repetition {
-                when 'repeat-y' { $repeat-x = False }
-                when 'repeat-x' { $repeat-y = False }
-                when 'no-repeat' { $repeat-x = $repeat-y = False }
-            }
+            my Bool \repeat-x = ? ($pattern.repetition eq 'repeat'|'repeat-x');
+            my Bool \repeat-y = ? ($pattern.repetition eq 'repeat'|'repeat-y');
+
             my $image = $pattern.image;
             my Numeric $image-width = $image.width;
             my Numeric $image-height = $image.height;
 
             my constant BigPad = 1000;
-            my $left-pad = $repeat-x ?? 0 !! BigPad;
-            my $bottom-pad = $repeat-y ?? 0 !! BigPad;
+            my $left-pad = repeat-x ?? 0 !! BigPad;
+            my $bottom-pad = repeat-y ?? 0 !! BigPad;
 
             my @Matrix = @ctm;
             with @Matrix {
