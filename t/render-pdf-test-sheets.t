@@ -8,7 +8,7 @@ use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 
 my PDF::Lite $pdf .= new;
-my $page-no;
+my $sheet-no;
 my @html-body;
 my @sheets;
 
@@ -18,13 +18,13 @@ my \pad = 10;
 my \textHeight = 20;
 my $text-width;
 
-sub test-page(&markup) {
+sub test-sheet(&markup) {
     my HTML::Canvas $canvas .= new;
     my $gfx = $pdf.add-page.gfx;
     $gfx.comment-ops = True;
     my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas;
     my Bool $clean = True;
-    $page-no++;
+    $sheet-no++;
 
     try {
         $canvas.context(
@@ -36,7 +36,7 @@ sub test-page(&markup) {
 
         CATCH {
             default {
-                warn "stopped on page $page-no: {.message}";
+                warn "stopped on page $sheet-no: {.message}";
                 $clean = False;
                 # flush
                 $canvas.beginPath if $canvas.subpath;
@@ -46,14 +46,14 @@ sub test-page(&markup) {
         }
     }
 
-    ok $clean, "completion of page $page-no";
+    ok $clean, "completion of page $sheet-no";
     my $width = $feed.width;
     my $height = $feed.height;
     @html-body.push: "<hr/>" ~ $canvas.to-html( :$width, :$height );
     @sheets.push: $canvas;
 }
 
-test-page(-> \ctx {
+test-sheet(-> \ctx {
     # tests adapted from jsPDF/examples/context2d/test_context2d.html
       sub draw-line {
           ctx.beginPath();
@@ -168,7 +168,7 @@ test-page(-> \ctx {
       ctx.restore();
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       ctx.save();
       ctx.fillText("Testing measureText and textAlign", 20, $y + textHeight);
       $y += 20 + pad;
@@ -185,11 +185,11 @@ test-page( -> \ctx {
       ctx.moveTo(20, $y1);
       ctx.lineTo(20, $y1+textHeight);
       ctx.stroke();
-  
+
       ctx.beginPath();
       ctx.moveTo(20 + $text-width, $y1);
       ctx.lineTo(20 + $text-width, $y1+textHeight);
-      ctx.stroke();  
+      ctx.stroke();
 
       $y += textHeight + pad;
       my $y-start = $y;
@@ -302,7 +302,7 @@ ok(120 < $text-width < 130, 'MeasureText')
 
 sub deg2rad(Numeric $deg) { $deg * pi / 180 }
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       ctx.fillText("Testing arc, stroke, and fill", 20, $y + textHeight);
       $y += textHeight + pad + 20;
       ctx.strokeStyle = 'rgba(0,0,255,.75)';
@@ -404,7 +404,7 @@ test-page( -> \ctx {
       $y +=  pad + 40;
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       # fill and stroke styles
       ctx.fillText("Testing fillStyle and strokeStyle", 20, $y + textHeight);
       $y += textHeight + pad;
@@ -475,7 +475,7 @@ test-page( -> \ctx {
       ctx.fillRect(90, $y+40, 100, 50);
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       $y = pad;
       ctx.fillText("Testing bezierCurveTo", 20, $y + textHeight);
       $y += textHeight + pad;
@@ -525,7 +525,7 @@ test-page( -> \ctx {
 my \image = PDF::Content::Image::PNG.open("t/images/camelia-logo.png");
 @html-body.push: HTML::Canvas.to-html: image, :style("visibility:hidden");
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       ctx.fillText("Testing drawImage", 20, $y += textHeight);
       $y += pad + 10;
 
@@ -554,7 +554,7 @@ test-page( -> \ctx {
       $y += 200 + pad;
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       ctx.fillText("Testing drawImage (canvas)", 20, $y + textHeight);
       $y += textHeight + pad + 10;
 
@@ -586,7 +586,7 @@ test-page( -> \ctx {
 
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
       $y = pad;
       ctx.fillText("Testing Patterns", 20, $y + textHeight);
       $y += textHeight + pad + 10;
@@ -608,7 +608,7 @@ test-page( -> \ctx {
       }
 });
 
-test-page( -> \ctx {
+test-sheet( -> \ctx {
     $y = pad;
     ctx.fillText("Testing Gradients", 20, $y + textHeight);
     $y += textHeight + pad + 10;
@@ -633,10 +633,10 @@ test-page( -> \ctx {
     }
 });
 
-lives-ok {$pdf.save-as("t/render-pdf-test-pages.pdf")}, "pdf.save-as";
+lives-ok {$pdf.save-as("t/render-pdf-test-sheets.pdf")}, "pdf.save-as";
 
 my $html = "<html><body>" ~ @html-body.join ~ "</body></html>";
 
-"t/render-pdf-test-pages.html".IO.spurt: $html;
+"t/render-pdf-test-sheets.html".IO.spurt: $html;
 
 done-testing;

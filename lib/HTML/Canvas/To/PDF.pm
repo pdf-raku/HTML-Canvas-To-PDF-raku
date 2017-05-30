@@ -296,8 +296,8 @@ class HTML::Canvas::To::PDF {
         my LineCaps $lc = %( :butt(ButtCaps), :round(RoundCaps),  :square(SquareCaps)){$cap-name};
         $!gfx.LineCap = $lc;
     }
-    method lineJoin(HTML::Canvas::LineJoin $cap-name) {
-        my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$cap-name};
+    method lineJoin(HTML::Canvas::LineJoin $join-name) {
+        my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$join-name};
         $!gfx.LineJoin = $lj;
     }
     method !text(Str $text, Numeric $x, Numeric $y, Numeric :$maxWidth) {
