@@ -12,7 +12,7 @@ class HTML::Canvas::To::PDF {
     use PDF::Style::Font:ver(v0.0.1..*);
     use PDF::Content::Util::TransformMatrix;
 
-    has HTML::Canvas $.canvas .= new;
+    has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
     has $.width;  # canvas width in points
     has $.height; # canvas height in points
