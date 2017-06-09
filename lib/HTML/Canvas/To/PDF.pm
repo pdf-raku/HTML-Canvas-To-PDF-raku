@@ -32,7 +32,7 @@ class HTML::Canvas::To::PDF {
     method !add-pdf-comment($op, *@args) {
 	use JSON::Fast;
 	my @jargs = flat @args.map: {
-	    when Str|Numeric|Bool|List { to-json($_) }
+	    when Str|Numeric|Bool|List { to-json($_).subst(/(<-[\0..\xFF]>)/, { '\u%04d'.sprintf($0.ord)}, :g) }
 	    when HTML::Canvas::Pattern | HTML::Canvas::Gradient {
 		.to-js('ctx');
 	    }

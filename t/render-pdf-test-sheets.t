@@ -1,6 +1,6 @@
 use v6;
 use Test;
-plan 11;
+plan 12;
 
 use PDF::Lite;
 use PDF::Content::Image::PNG;
@@ -16,7 +16,6 @@ my $y = 0;
 my \h = 20;
 my \pad = 10;
 my \textHeight = 20;
-my $text-width;
 
 sub test-sheet(&markup) {
     my HTML::Canvas $canvas .= new;
@@ -75,27 +74,27 @@ test-sheet(-> \ctx {
       ctx.fillText("Hello PDF", 20, $y + textHeight);
       $y += textHeight + pad;
 
-      ctx.font = "small courier bold";
+      ctx.font = "bold small courier";
       ctx.fillText("Hello Bold PDF", 20, $y + textHeight);
       $y += textHeight + pad;
 
-      ctx.font = "10pt courier italic";
+      ctx.font = "italic 10pt courier";
       ctx.fillText("Hello Italic PDF", 20, $y + textHeight);
       $y += textHeight + pad;
 
-      ctx.font = "50pt courier bold";
+      ctx.font = "bold 50pt courier";
       ctx.fillText("Hello PDF", 20, $y + 50);
       $y += 50 + pad;
 
-      ctx.font = "50pt courier bold";
+      ctx.font = "bold 50pt courier";
       ctx.strokeText("Hello PDF", 20, $y + 50);
       $y += 50 + pad;
 
-      ctx.font = "20pt courier bold";
+      ctx.font = "bold 20pt courier";
       ctx.strokeText("Hello PDF", 20, $y + 20);
       $y += 20 + pad;
 
-      ctx.font = "20pt courier bold";
+      ctx.font = "bold 20pt courier";
       ctx.fillText("Hello PDF", 20, $y + 20);
       $y += 20 + pad;
 
@@ -176,7 +175,9 @@ test-sheet( -> \ctx {
 
       my $text = "< Measured Text >";
       ctx.fillText($text, 20, $y + textHeight);
-      $text-width = ctx.measureText($text).width;
+      my $text-width = ctx.measureText($text).width;
+      ok(120 < $text-width < 130, 'MeasureText')
+          or diag "text measurement $text-width outside of range: 120...130";
 
       # Create a red line before and after text
       ctx.strokeStyle="red";
@@ -220,10 +221,28 @@ test-sheet( -> \ctx {
       ctx.moveTo(150,$y-start);
       ctx.lineTo(150,$y);
       ctx.stroke();
-      #
-      # rectangles
-      #
-      $y += textHeight + pad;
+
+      ctx.fillText("Testing fonts", 20, $y += textHeight + pad);
+
+      for <arial helvetica courier symbol times webdings> -> $face {
+         $y += 20;
+
+         ctx.font = "10pt $face";
+         my $text = $face ~ "♠♥♦♣";
+         ctx.fillText($text, 20, $y);
+
+         ctx.font = "bold 10pt $face";
+         ctx.fillText($text, 100, $y);
+
+         ctx.font = "italic 10pt $face";
+         ctx.fillText($text, 180, $y);
+
+         ctx.font = "bold italic 10pt $face";
+         ctx.fillText($text, 260, $y);
+      }
+});
+
+test-sheet( -> \ctx {
       ctx.save();
       ctx.fillText("Testing fillRect, clearRect and strokeRect", 20, $y + textHeight);
       $y += textHeight + pad;
@@ -232,6 +251,7 @@ test-sheet( -> \ctx {
       $y += h + pad;
 
       ctx.fillStyle = '#ccc';
+      ctx.strokeStyle="red";
       ctx.fillRect(20, $y, 40, h);
       ctx.clearRect(25, $y+5, 10, 10);
       $y += h + pad;
@@ -243,12 +263,12 @@ test-sheet( -> \ctx {
       #
       # lines
       #
-      # line caps
 
       ctx.save();
       ctx.fillText("Testing lineCap", 20, $y + textHeight);
       $y += textHeight + pad;
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 10;
+      ctx.strokeStyle="blue";
 
       for <butt round square> {
           ctx.beginPath();
@@ -256,16 +276,17 @@ test-sheet( -> \ctx {
           ctx.moveTo(20, $y);
           ctx.lineTo(200, $y);
           ctx.stroke();
-          $y += pad;
+          $y += pad + 5;
       }
 
       ctx.restore();
 
-      # line joins
       ctx.save();
       ctx.fillText("Testing lineJoin", 20, $y + textHeight);
-      $y += textHeight + pad;
       ctx.lineWidth = 10;
+      ctx.strokeStyle="blue";
+      $y += textHeight + pad;
+
       for <miter bevel round> {
           ctx.beginPath();
           ctx.lineJoin = $_;
@@ -296,9 +317,6 @@ test-sheet( -> \ctx {
       }
 
 });
-
-ok(120 < $text-width < 130, 'MeasureText')
-    or diag "text measurement $text-width outside of range: 120...130";
 
 sub deg2rad(Numeric $deg) { $deg * pi / 180 }
 
