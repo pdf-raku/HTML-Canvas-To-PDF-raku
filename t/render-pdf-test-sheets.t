@@ -3,7 +3,7 @@ use Test;
 plan 12;
 
 use PDF::Lite;
-use PDF::Content::Image::PNG;
+use HTML::Canvas::Image;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 
@@ -540,7 +540,7 @@ test-sheet( -> \ctx {
       ctx.restore();
 });
 
-my \image = PDF::Content::Image::PNG.open("t/images/camelia-logo.png");
+my \image = HTML::Canvas::Image.open("t/images/camelia-logo.png");
 @html-body.push: HTML::Canvas.to-html: image, :style("visibility:hidden");
 
 test-sheet( -> \ctx {
@@ -600,7 +600,7 @@ test-sheet( -> \ctx {
       ctx.drawImage($canvas, 20, $y, 100, 150);
       ctx.drawImage($canvas, 160, $y, 100, 150);
       ctx.drawImage($canvas,                    30, 30, 400, 500,
-                                   300, $y, 100, 150);
+                             300, $y, 100, 150);
 
 });
 

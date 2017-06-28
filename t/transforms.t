@@ -3,10 +3,9 @@ use Test;
 plan 2;
 
 use PDF::Lite;
-use PDF::Content::Image;
+use HTML::Canvas::Image;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
-
 my PDF::Lite $pdf .= new;
 my $page-no;
 my @html-body;
@@ -51,7 +50,7 @@ sub test-page(&markup) {
     @sheets.push: $canvas;
 }
 
-my \image = PDF::Content::Image.open("t/images/crosshair-100x100.jpg");
+my \image = HTML::Canvas::Image.open("t/images/crosshair-100x100.jpg");
 
 @html-body.push: HTML::Canvas.to-html: image, :style("visibility:hidden");
 

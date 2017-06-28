@@ -2,15 +2,18 @@ use v6;
 class HTML::Canvas::To::PDF {
 
     use Color;
-    use HTML::Canvas:ver(v0.0.1..*);
+    use HTML::Canvas:ver(v0.0.2..*);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
+    use HTML::Canvas::Image;
     use PDF:ver(v0.2.1..*);
     use PDF::DAO;
-    use PDF::Content:ver(v0.0.2..*);
+    use PDF::Content:ver(v0.0.5..*);
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Style::Font:ver(v0.0.1..*);
-    use PDF::Content::Util::TransformMatrix;
+    use PDF::Content::Matrix;
+    use PDF::Content::Image;
+    use PDF::Content::XObject;
 
     has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
@@ -67,7 +70,7 @@ class HTML::Canvas::To::PDF {
     }
 
     method !transform( |c ) {
-	my Numeric @tm = PDF::Content::Util::TransformMatrix::transform( |c );
+	my Numeric @tm = PDF::Content::Matrix::transform( |c );
 	$!gfx.ConcatMatrix( @tm );
     }
 
@@ -101,9 +104,9 @@ class HTML::Canvas::To::PDF {
         self!transform( |matrix => [a, b, -c, d, e, -f]);
     }
     method setTransform(Numeric \a, Numeric \b, Numeric \c, Numeric \d, Numeric \e, Numeric \f) {
-        $!gfx.CTM = PDF::Content::Util::TransformMatrix::multiply(
+        $!gfx.CTM = PDF::Content::Matrix::multiply(
             [a, b, -c, d, e, -f],
-            PDF::Content::Util::TransformMatrix::translate(0, $!height)
+            PDF::Content::Matrix::translate(0, $!height)
         );
    }
     method clearRect(Numeric \x, Numeric \y, Numeric \w, Numeric \h) {
@@ -154,7 +157,6 @@ class HTML::Canvas::To::PDF {
             }
         }
     }
-    method !pdf {require PDF::Lite:ver(v0.0.1..*)}
     has %!pattern-cache{Any};
     method !make-pattern(HTML::Canvas::Pattern $pattern --> Pair) {
         my @ctm = $!gfx.CTM.list;
@@ -163,8 +165,9 @@ class HTML::Canvas::To::PDF {
             my Bool \repeat-y = ? ($pattern.repetition eq 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
-            my Numeric $image-width = $image.width;
-            my Numeric $image-height = $image.height;
+            my PDF::Content::XObject $xobject = PDF::Content::Image.open: $image.data-uri;
+            my Numeric $image-width = $xobject.width;
+            my Numeric $image-height = $xobject.height;
 
             my constant BigPad = 1000;
             my $left-pad = repeat-x ?? 0 !! BigPad;
@@ -177,12 +180,11 @@ class HTML::Canvas::To::PDF {
                 .[F] -= $image-height * .[Scale-Y];
             }
             my @BBox = [0, 0, $image-width + $left-pad, $image-height + $bottom-pad];
-            my $Pattern = self!pdf.tiling-pattern(:@BBox, :@Matrix, :XStep($image-width + $left-pad), :YStep($image-height + $bottom-pad) );
+            my $Pattern = $!gfx.tiling-pattern(:@BBox, :@Matrix, :XStep($image-width + $left-pad), :YStep($image-height + $bottom-pad) );
             $Pattern.graphics: {
-                .do($image, 0, 0);
+                .do($xobject, 0, 0);
             }
-            $Pattern.finish;
-            Pattern => $!gfx.resource-key($Pattern);
+            $!gfx.use-pattern($Pattern);
         }
     }
     method !make-shading(HTML::Canvas::Gradient $gradient --> PDF::DAO::Dict) {
@@ -306,7 +308,7 @@ class HTML::Canvas::To::PDF {
 
         $!gfx.BeginText;
         $!gfx.HorizScaling = $scale;
-        $!gfx.text-position = self!coords($x, $y);
+        $!gfx.TextMove = self!coords($x, $y);
         my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
         my HTML::Canvas::TextAlignment $align = do given $!canvas.textAlign {
             when 'start' { $!canvas.direction eq 'ltr' ?? 'left' !! 'right' }
@@ -340,15 +342,14 @@ class HTML::Canvas::To::PDF {
     has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         %!canvas-cache{ ($image.html-id, $width, $height).join('X') } //= do {
-            my $form = (require ::('PDF::Lite')).xobject-form( :bbox[0, 0, $width, $height] );
+            my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
             my $renderer = self.new: :gfx($form.gfx), :$width, :$height;
             $image.render($renderer);
-            $form.finish;
             $form
         };
     }
-    my subset CanvasOrXObject where HTML::Canvas|Hash;
-    multi method drawImage( CanvasOrXObject $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
+    my subset CanvasOrImage where HTML::Canvas|HTML::Canvas::Image;
+    multi method drawImage( CanvasOrImage $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
             my $ga = $!canvas.globalAlpha;
@@ -369,7 +370,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.transform: :translate[ -sx * x-scale, sy * y-scale ]
                 if sx || sy;
 
-            my $xobject;
+            my PDF::Content::XObject $xobject;
             my $width;
             my $height;
 
@@ -381,9 +382,9 @@ class HTML::Canvas::To::PDF {
                 $height *= y-scale;
             }
             else {
-                $width = x-scale * $image.width;
-                $height = y-scale * $image.height;
-                $xobject = $image;
+                $xobject = PDF::Content::Image.open: $image.data-uri;
+                $width = x-scale * $xobject.width;
+                $height = y-scale * $xobject.height;
             }
 
             $!gfx.do: $xobject, :valign<top>, :$width, :$height;
@@ -391,15 +392,15 @@ class HTML::Canvas::To::PDF {
             $!gfx.Restore;
         }
     }
-    multi method drawImage(CanvasOrXObject $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
-        my $xobject;
+    multi method drawImage(CanvasOrImage $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
+        my PDF::Content::XObject $xobject;
         if $image.isa(HTML::Canvas) {
             my $width = $image.html-width // $dw;
             my $height = $image.html-height // $dh;
             $xobject = self!canvas-to-xobject($image, :$width, :$height);
         }
         else {
-            $xobject = $image;
+            $xobject = PDF::Content::Image.open: $image.data-uri;
         }
 
         my %opt = :valign<top>;
