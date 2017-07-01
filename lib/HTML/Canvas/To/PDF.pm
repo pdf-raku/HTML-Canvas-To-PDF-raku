@@ -2,7 +2,7 @@ use v6;
 class HTML::Canvas::To::PDF {
 
     use Color;
-    use HTML::Canvas:ver(v0.0.2..*);
+    use HTML::Canvas:ver(v0.0.3..*);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Image;
@@ -17,8 +17,9 @@ class HTML::Canvas::To::PDF {
 
     has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
-    has $.width;  # canvas width in points
-    has $.height; # canvas height in points
+    has Numeric $.width;  # canvas width in points
+    has Numeric $.height; # canvas height in points
+    has PDF::Style::Font $!font;
 
     submethod TWEAK {
         with $!gfx.parent {
@@ -27,7 +28,6 @@ class HTML::Canvas::To::PDF {
         }
 
         with $!canvas {
-            .font-object //= PDF::Style::Font.new;
             .callback.push: self.callback;
         }
     }
@@ -35,7 +35,7 @@ class HTML::Canvas::To::PDF {
     method !add-pdf-comment($op, *@args) {
 	use JSON::Fast;
 	my @jargs = flat @args.map: {
-	    when Str|Numeric|Bool|List { to-json($_).subst(/(<-[\0..\xFF]>)/, { '\u%04d'.sprintf($0.ord)}, :g) }
+	    when Str|Numeric|Bool|List { to-json($_).subst(/(<-[\0..\xFF]>)/, { '\u%04d'.sprintf($0.ord)}, :g).subst(/[' '|"\n"]+/, ' ', :g) }
 	    when HTML::Canvas::Pattern | HTML::Canvas::Gradient {
 		.to-js('ctx');
 	    }
@@ -75,7 +75,8 @@ class HTML::Canvas::To::PDF {
     }
 
     method _start {
-        $!canvas.font-object //= PDF::Style::Font.new;
+        $!font = PDF::Style::Font.new;
+        $!font.css = $!canvas.css;
         $!gfx.Save;
         # clip graphics to outsde of canvas
         $!gfx.Rectangle(0, 0, pt($!width), pt($!height) );
@@ -96,6 +97,7 @@ class HTML::Canvas::To::PDF {
     }
     method restore {
         $!gfx.Restore;
+        $!font.css = $!canvas.css;
     }
     method scale(Numeric \x, Numeric \y) { self!transform(|scale => [x, y]) }
     method rotate(Numeric \r) { self!transform(|rotate => -r) }
@@ -320,9 +322,9 @@ class HTML::Canvas::To::PDF {
         $!gfx.EndText;
     }
     method font(Str $font-style) {
-        my \canvas-font = $!canvas.font-object;
-        my \pdf-font = $!gfx.use-font(canvas-font.face);
-        $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size(canvas-font.em) ];
+        $!font.css = $!canvas.css;
+        my \pdf-font = $!gfx.use-font($!font.face);
+        $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size($!font.em) ];
     }
     method textBaseline(Str $_) {}
     method textAlign(Str $_) {}
@@ -338,7 +340,9 @@ class HTML::Canvas::To::PDF {
         self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method measureText(Str $text) {}
+    method measureText(Str $text --> Numeric) {
+        $!canvas.adjusted-font-size: $!font.stringwidth($text, $!font.em);
+    }
     has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         %!canvas-cache{ ($image.html-id, $width, $height).join('X') } //= do {
@@ -348,8 +352,34 @@ class HTML::Canvas::To::PDF {
             $form
         };
     }
-    my subset CanvasOrImage where HTML::Canvas|HTML::Canvas::Image;
-    multi method drawImage( CanvasOrImage $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
+    my subset Drawable where HTML::Canvas|HTML::Canvas::Image;
+    method !to-xobject(Drawable $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
+        when HTML::Canvas {
+            $width = $_ with .html-width;
+            $height = $_ with .html-height;
+            self!canvas-to-xobject($_, :$width, :$height);
+            }
+        when .image-type eq 'PNG'|'JPEG'|'GIF' {
+            with PDF::Content::Image.open: .data-uri {
+                $width = .width;
+                $height = .height;
+                $_;
+            }
+        }
+        default {
+            # something we can't handle - draw placeholder
+            my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
+            $form.graphics: {
+                .FillColor = :DeviceRGB[.8, .9, .9];
+                .FillAlpha = .45;
+                .Rectangle(0, 0, $width, $height);
+                .Fill;
+            }
+            $form;
+        }
+        
+    }
+    multi method drawImage( Drawable $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
             my $ga = $!canvas.globalAlpha;
@@ -370,38 +400,23 @@ class HTML::Canvas::To::PDF {
             $!gfx.transform: :translate[ -sx * x-scale, sy * y-scale ]
                 if sx || sy;
 
-            my PDF::Content::XObject $xobject;
-            my $width;
-            my $height;
+            my $width = dw;
+            my $height = dh;
+            my PDF::Content::XObject $xobject = self!to-xobject($image, :$width, :$height);
 
-            if $image.isa(HTML::Canvas) {
-                $width = $image.html-width || dw;
-                $height = $image.html-height || dh;
-                $xobject = self!canvas-to-xobject($image, :$width, :$height);
-                $width  *= x-scale;
-                $height *= y-scale;
-            }
-            else {
-                $xobject = PDF::Content::Image.open: $image.data-uri;
-                $width = x-scale * $xobject.width;
-                $height = y-scale * $xobject.height;
-            }
+            $width  *= x-scale;
+            $height *= y-scale;
 
             $!gfx.do: $xobject, :valign<top>, :$width, :$height;
 
             $!gfx.Restore;
         }
     }
-    multi method drawImage(CanvasOrImage $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
-        my PDF::Content::XObject $xobject;
-        if $image.isa(HTML::Canvas) {
-            my $width = $image.html-width // $dw;
-            my $height = $image.html-height // $dh;
-            $xobject = self!canvas-to-xobject($image, :$width, :$height);
-        }
-        else {
-            $xobject = PDF::Content::Image.open: $image.data-uri;
-        }
+    multi method drawImage(Drawable $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
+
+        my $width = $dw;
+        my $height = $dh;
+        my PDF::Content::XObject $xobject = self!to-xobject($image, :$width, :$height);
 
         my %opt = :valign<top>;
         %opt<width>  = $_ with $dw;
