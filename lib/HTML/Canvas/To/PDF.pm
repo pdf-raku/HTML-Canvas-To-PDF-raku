@@ -6,6 +6,7 @@ class HTML::Canvas::To::PDF {
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Image;
+    use HTML::Canvas::ImageData;
     use PDF:ver(v0.2.1..*);
     use PDF::DAO;
     use PDF::Content:ver(v0.0.5..*);
@@ -13,6 +14,7 @@ class HTML::Canvas::To::PDF {
     use PDF::Style::Font:ver(v0.0.1..*);
     use PDF::Content::Matrix;
     use PDF::Content::Image;
+    use PDF::Content::Image::PNG;
     use PDF::Content::XObject;
 
     has HTML::Canvas $.canvas is rw .= new;
@@ -352,13 +354,22 @@ class HTML::Canvas::To::PDF {
             $form
         };
     }
-    my subset Drawable where HTML::Canvas|HTML::Canvas::Image;
+    my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
     method !to-xobject(Drawable $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
         when HTML::Canvas {
             $width = $_ with .html-width;
             $height = $_ with .html-height;
             self!canvas-to-xobject($_, :$width, :$height);
+        }
+        when HTML::Canvas::ImageData {
+            need PDF::IO;
+            my $fh = PDF::IO.coerce: .image.Blob.decode: "latin-1";
+            with PDF::Content::Image::PNG.open($fh) {
+                $width = .width;
+                $height = .height;
+                $_;
             }
+        }
         when .image-type eq 'PNG'|'JPEG'|'GIF' {
             with PDF::Content::Image.open: .data-uri {
                 $width = .width;
@@ -434,6 +445,7 @@ class HTML::Canvas::To::PDF {
 	$!gfx.Restore
 	    unless $ga =~= 1;
     }
+    method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
     method setLineDash(List $pattern) {
         $!gfx.SetDashPattern($pattern, $!canvas.lineDashOffset)
