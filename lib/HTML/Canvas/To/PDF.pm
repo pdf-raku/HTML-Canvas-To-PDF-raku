@@ -312,7 +312,7 @@ class HTML::Canvas::To::PDF {
 
         $!gfx.BeginText;
         $!gfx.HorizScaling = $scale;
-        $!gfx.TextMove = self!coords($x, $y);
+        $!gfx.text-position = self!coords($x, $y);
         my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
         my HTML::Canvas::TextAlignment $align = do given $!canvas.textAlign {
             when 'start' { $!canvas.direction eq 'ltr' ?? 'left' !! 'right' }
