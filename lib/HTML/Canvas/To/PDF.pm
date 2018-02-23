@@ -2,28 +2,41 @@ use v6;
 class HTML::Canvas::To::PDF {
 
     use Color;
-    use HTML::Canvas:ver(v0.0.3..*);
+    use HTML::Canvas:ver(v0.0.3+);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Image;
     use HTML::Canvas::ImageData;
-    use PDF:ver(v0.2.1..*);
+    use PDF:ver(v0.2.1+);
     use PDF::DAO;
-    use PDF::Content:ver(v0.0.5..*);
+    use PDF::Content:ver(v0.0.5+);
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
-    use PDF::Style::Font:ver(v0.0.1..*);
     use PDF::Content::Matrix;
     use PDF::Content::Image;
     use PDF::Content::Image::PNG;
     use PDF::Content::XObject;
+    use CSS::Declarations::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
     has Numeric $.width;  # canvas width in points
     has Numeric $.height; # canvas height in points
-    has PDF::Style::Font $!font;
 
-    submethod TWEAK {
+    class FontCache
+        is CSS::Declarations::Font {
+
+         use PDF::Font::Loader;
+         method font-obj {
+             state %cache;
+             my $file = $.find-font;
+             %cache{$file} //= PDF::Font::Loader.load-font: :$file;
+         }
+    }
+    has FontCache $!font;
+
+    submethod TWEAK(PDF :$pdf)  {
+        $!gfx //= .add-page.gfx
+            with $pdf;
         with $!gfx.parent {
             $!width  //= .width;
             $!height //= .height;
@@ -77,7 +90,7 @@ class HTML::Canvas::To::PDF {
     }
 
     method _start {
-        $!font = PDF::Style::Font.new;
+        $!font .= new;
         $!font.css = $!canvas.css;
         $!gfx.Save;
         # clip graphics to outsde of canvas
@@ -169,7 +182,7 @@ class HTML::Canvas::To::PDF {
             my Bool \repeat-y = ? ($pattern.repetition eq 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
-            my PDF::Content::XObject $xobject = PDF::Content::Image.open: $image.data-uri;
+            my PDF::Content::XObject $xobject = (%!image-cache{$image} //= PDF::Content::Image.open: $image.data-uri);
             my Numeric $image-width = $xobject.width;
             my Numeric $image-height = $xobject.height;
 
@@ -222,7 +235,7 @@ class HTML::Canvas::To::PDF {
             # multiple functions - wrap then up in a stiching function
             my @Bounds = [ (1 .. (+@color-stops-2)).map: { @color-stops[$_]<offset>; } ];
             my @Encode = flat (0, 1) xx +@Functions;
-            
+
             $Function = {
                 :FunctionType(Stitching),
                 :Domain[0, 1],
@@ -325,7 +338,7 @@ class HTML::Canvas::To::PDF {
     }
     method font(Str $font-style) {
         $!font.css = $!canvas.css;
-        my \pdf-font = $!gfx.use-font($!font.face);
+        my \pdf-font = $!gfx.use-font($!font.font-obj);
         $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size($!font.em) ];
     }
     method textBaseline(Str $_) {}
@@ -343,7 +356,7 @@ class HTML::Canvas::To::PDF {
         $!gfx.Restore
     }
     method measureText(Str $text --> Numeric) {
-        $!canvas.adjusted-font-size: $!font.stringwidth($text, $!font.em);
+        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($text, $!font.em);
     }
     has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
@@ -355,23 +368,24 @@ class HTML::Canvas::To::PDF {
         };
     }
     my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
+    has %!image-cache{Any};
     method !to-xobject(Drawable $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
         when HTML::Canvas {
             $width = $_ with .html-width;
             $height = $_ with .html-height;
-            self!canvas-to-xobject($_, :$width, :$height);
+            %!image-cache{$_} //= self!canvas-to-xobject($_, :$width, :$height);
         }
         when HTML::Canvas::ImageData {
             need PDF::IO;
             my $fh = PDF::IO.coerce: .image.Blob.decode: "latin-1";
-            with PDF::Content::Image::PNG.open($fh) {
+            given %!image-cache{$_} //= PDF::Content::Image::PNG.open($fh) {
                 $width = .width;
                 $height = .height;
                 $_;
             }
         }
         when .image-type eq 'PNG'|'JPEG'|'GIF' {
-            with PDF::Content::Image.open: .data-uri {
+            given %!image-cache{$_} //= PDF::Content::Image.open: .data-uri {
                 $width = .width;
                 $height = .height;
                 $_;
@@ -388,7 +402,6 @@ class HTML::Canvas::To::PDF {
             }
             $form;
         }
-        
     }
     multi method drawImage( Drawable $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {

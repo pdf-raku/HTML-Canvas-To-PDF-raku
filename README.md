@@ -1,7 +1,8 @@
 # perl6-HTML-Canvas-To-PDF
 
-This is a PDF rendering backend for HTML::Canvas. A canvas may be rendered to either
-a page, or an XObject form.
+This is a PDF rendering backend for HTML::Canvas. A canvas may be rendered to either a page, or an XObject form.
+
+This backend is **experimental**. At this stage, it is intended primarily for benchmarking and regression testing, etc for the Perl 6 PDF and CSS tool-chains.
 
 ```
 use v6;

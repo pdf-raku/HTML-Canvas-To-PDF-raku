@@ -2,10 +2,10 @@ use v6;
 use Test;
 plan 2;
 
-use PDF::Lite;
 use HTML::Canvas::Image;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
+use PDF::Lite;
 my PDF::Lite $pdf .= new;
 my $page-no;
 my @html-body;

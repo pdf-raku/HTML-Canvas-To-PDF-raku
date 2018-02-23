@@ -125,7 +125,7 @@ test-sheet(-> \ctx {
       ctx.fillText("Testing textBaseline", 20, $y + textHeight);
       $y += textHeight + pad + 30;
 
-      ctx.strokeStyle = '#ddd';
+      ctx.strokeStyle = '#d99';
       ctx.font = "20pt times";
 
       draw-line();
@@ -232,13 +232,13 @@ test-sheet( -> \ctx {
          ctx.fillText($text, 20, $y);
 
          ctx.font = "bold 10pt $face";
-         ctx.fillText($text, 100, $y);
+         ctx.fillText($text, 150, $y);
 
          ctx.font = "italic 10pt $face";
-         ctx.fillText($text, 180, $y);
+         ctx.fillText($text, 280, $y);
 
          ctx.font = "bold italic 10pt $face";
-         ctx.fillText($text, 260, $y);
+         ctx.fillText($text, 4100, $y);
       }
 });
 
