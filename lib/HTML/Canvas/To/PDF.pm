@@ -2,7 +2,7 @@ use v6;
 class HTML::Canvas::To::PDF {
 
     use Color;
-    use HTML::Canvas:ver(v0.0.3+);
+    use HTML::Canvas:ver(v0.0.2+);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Image;
