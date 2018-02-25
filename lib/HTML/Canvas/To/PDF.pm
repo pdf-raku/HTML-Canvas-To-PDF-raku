@@ -22,17 +22,25 @@ class HTML::Canvas::To::PDF {
     has Numeric $.width;  # canvas width in points
     has Numeric $.height; # canvas height in points
 
-    class FontCache
+    my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
+    class Cache {
+        has %.image{Drawable};
+        has %.gradient{HTML::Canvas::Gradient};
+        has %.pattern{HTML::Canvas::Pattern};
+        has %.font;
+        has %.canvas{HTML::Canvas};
+    }
+    class Font
         is CSS::Declarations::Font {
 
          use PDF::Font::Loader;
-         method font-obj {
-             state %cache;
+         method font-obj(:$cache!) {
              my $file = $.find-font;
-             %cache{$file} //= PDF::Font::Loader.load-font: :$file;
+             $cache.font{$file} //= PDF::Font::Loader.load-font: :$file;
          }
     }
-    has FontCache $!font;
+    has Font $!font;
+    has Cache $.cache .= new;
 
     submethod TWEAK(PDF :$pdf)  {
         $!gfx //= .add-page.gfx
@@ -174,15 +182,14 @@ class HTML::Canvas::To::PDF {
             }
         }
     }
-    has %!pattern-cache{Any};
     method !make-pattern(HTML::Canvas::Pattern $pattern --> Pair) {
         my @ctm = $!gfx.CTM.list;
-        %!pattern-cache{$pattern}{@ctm.Str} //= do {
+        $!cache.pattern{$pattern}{@ctm.Str} //= do {
             my Bool \repeat-x = ? ($pattern.repetition eq 'repeat'|'repeat-x');
             my Bool \repeat-y = ? ($pattern.repetition eq 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
-            my PDF::Content::XObject $xobject = (%!image-cache{$image} //= PDF::Content::Image.open: $image.data-uri);
+            my PDF::Content::XObject $xobject = ($!cache.image{$image} //= PDF::Content::Image.open: $image.data-uri);
             my Numeric $image-width = $xobject.width;
             my Numeric $image-height = $xobject.height;
 
@@ -205,74 +212,74 @@ class HTML::Canvas::To::PDF {
         }
     }
     method !make-shading(HTML::Canvas::Gradient $gradient --> PDF::DAO::Dict) {
-	enum « :Axial(2) :Stitching(3), :Radial(3) »;
-        my @color-stops;
-        for $gradient.colorStops.sort(*.offset) {
-            my @rgb = (.r, .g, .b).map: (*/255)
-                with .color;
-            @color-stops.push: %( :offset(.offset), :@rgb );
-        };
-        @color-stops.push({ :rgb[1, 1, 1] })
-            unless @color-stops;
-        @color-stops[0]<offset> = 0.0;
-        state %func-cache{Any};
-        my @Functions = [(1 ..^ +@color-stops).map: {
-                my $C0 = @color-stops[$_ - 1]<rgb>;
-                my $C1 = @color-stops[$_]<rgb>;
-                %(
-                    :FunctionType(Axial),
+        $!cache.gradient{$gradient}<shading> //= do {
+            enum « :Axial(2) :Stitching(3), :Radial(3) »;
+            my @color-stops;
+            for $gradient.colorStops.sort(*.offset) {
+                my @rgb = (.r, .g, .b).map: (*/255)
+                    with .color;
+                @color-stops.push: %( :offset(.offset), :@rgb );
+            };
+            @color-stops.push({ :rgb[1, 1, 1] })
+                unless @color-stops;
+            @color-stops[0]<offset> = 0.0;
+            my @Functions = [(1 ..^ +@color-stops).map: {
+                    my $C0 = @color-stops[$_ - 1]<rgb>;
+                    my $C1 = @color-stops[$_]<rgb>;
+                    %(
+                        :FunctionType(Axial),
+                        :Domain[0, 1],
+                        :$C0,
+                        :$C1,
+                        :N(1)
+                    );
+                }];
+            my $Function;
+            if +@Functions == 1 {
+                $Function = @Functions[0];
+            }
+            else {
+                # multiple functions - wrap then up in a stitching function
+                my @Bounds = [ (1 .. (+@color-stops-2)).map: { @color-stops[$_]<offset>; } ];
+                my @Encode = flat (0, 1) xx +@Functions;
+
+                $Function = {
+                    :FunctionType(Stitching),
                     :Domain[0, 1],
-                    :$C0,
-                    :$C1,
-                    :N(1)
-                );
-            }];
-        my $Function;
-        if +@Functions == 1 {
-            $Function = @Functions[0];
-        }
-        else {
-            # multiple functions - wrap then up in a stiching function
-            my @Bounds = [ (1 .. (+@color-stops-2)).map: { @color-stops[$_]<offset>; } ];
-            my @Encode = flat (0, 1) xx +@Functions;
+                    :@Encode,
+                    :@Functions,
+                    :@Bounds
+                }
+            };
 
-            $Function = {
-                :FunctionType(Stitching),
+            my ($ShadingType, $Coords) = do given $gradient.type {
+                when 'Linear' {
+                    (Axial,
+                     [.x0, .y1, .x1, .y0] with $gradient);
+                }
+                when 'Radial' {
+                    (Radial,
+                     [.x0, .y1 - 2 * .y0, .r0, .x1, -.y0, .r1] with $gradient);
+                }
+            }
+
+            PDF::DAO.coerce: :dict{
+                :$ShadingType,
+                ($gradient.type eq 'Linear'
+                 ?? :Background(@color-stops.tail<rgb>)
+                 !! ()),
+                :ColorSpace( :name<DeviceRGB> ),
                 :Domain[0, 1],
-                :@Encode,
-                :@Functions,
-                :@Bounds
-            }
-        };
-
-        my ($ShadingType, $Coords) = do given $gradient.type {
-            when 'Linear' {
-                (Axial,
-		 [.x0, .y1, .x1, .y0] with $gradient);
-            }
-            when 'Radial' {
-                (Radial,
-		 [.x0, .y1 - 2 * .y0, .r0, .x1, -.y0, .r1] with $gradient);
-            }
+                :$Coords,
+                :$Function,
+                :Extend[True, True],
+            };
         }
-
-        PDF::DAO.coerce: :dict{
-            :$ShadingType,
-            ($gradient.type eq 'Linear'
-             ?? :Background(@color-stops.tail<rgb>)
-             !! ()),
-            :ColorSpace( :name<DeviceRGB> ),
-            :Domain[0, 1],
-            :$Coords,
-            :$Function,
-            :Extend[True, True],
-        };
     }
-    has %!gradient-cache{Any};
     method !make-gradient(HTML::Canvas::Gradient $gradient --> Pair) {
         my @ctm = $!gfx.CTM.list;
         @ctm.push: +$gradient.colorStops;
-        %!gradient-cache{$gradient}{@ctm.Str} //= do {
+        $!cache.gradient{$gradient}{@ctm.Str} //= do {
             my $Shading = self!make-shading($gradient);
             my Numeric $gradient-height = $gradient.y1 - $gradient.y0;
 
@@ -338,7 +345,7 @@ class HTML::Canvas::To::PDF {
     }
     method font(Str $font-style) {
         $!font.css = $!canvas.css;
-        my \pdf-font = $!gfx.use-font($!font.font-obj);
+        my \pdf-font = $!gfx.use-font($!font.font-obj(:$!cache));
         $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size($!font.em) ];
     }
     method textBaseline(Str $_) {}
@@ -356,36 +363,33 @@ class HTML::Canvas::To::PDF {
         $!gfx.Restore
     }
     method measureText(Str $text --> Numeric) {
-        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($text, $!font.em);
+        $!canvas.adjusted-font-size: $!font.font-obj(:$!cache).stringwidth($text, $!font.em);
     }
-    has %!canvas-cache;
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
-        %!canvas-cache{ ($image.html-id, $width, $height).join('X') } //= do {
+        $!cache.canvas{$image}{"$width,$height"} //= do {
             my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
-            my $renderer = self.new: :gfx($form.gfx), :$width, :$height;
+            my $renderer = self.new: :gfx($form.gfx), :$width, :$height, :$!cache;
             $image.render($renderer);
             $form
         };
     }
-    my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
-    has %!image-cache{Any};
     method !to-xobject(Drawable $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
         when HTML::Canvas {
             $width = $_ with .html-width;
             $height = $_ with .html-height;
-            %!image-cache{$_} //= self!canvas-to-xobject($_, :$width, :$height);
+            $!cache.image{$_} //= self!canvas-to-xobject($_, :$width, :$height);
         }
         when HTML::Canvas::ImageData {
             need PDF::IO;
             my $fh = PDF::IO.coerce: .image.Blob.decode: "latin-1";
-            given %!image-cache{$_} //= PDF::Content::Image::PNG.open($fh) {
+            given $!cache.image{$_} //= PDF::Content::Image::PNG.open($fh) {
                 $width = .width;
                 $height = .height;
                 $_;
             }
         }
         when .image-type eq 'PNG'|'JPEG'|'GIF' {
-            given %!image-cache{$_} //= PDF::Content::Image.open: .data-uri {
+            given $!cache.image{$_} //= PDF::Content::Image.open: .data-uri {
                 $width = .width;
                 $height = .height;
                 $_;
