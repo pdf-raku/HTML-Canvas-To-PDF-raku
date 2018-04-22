@@ -8,7 +8,7 @@ class HTML::Canvas::To::PDF {
     use HTML::Canvas::Image;
     use HTML::Canvas::ImageData;
     use PDF:ver(v0.2.1+);
-    use PDF::DAO;
+    use PDF::COS;
     use PDF::Content:ver(v0.0.5+);
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Content::Matrix;
@@ -211,7 +211,7 @@ class HTML::Canvas::To::PDF {
             $!gfx.use-pattern($Pattern);
         }
     }
-    method !make-shading(HTML::Canvas::Gradient $gradient --> PDF::DAO::Dict) {
+    method !make-shading(HTML::Canvas::Gradient $gradient --> PDF::COS::Dict) {
         $!cache.gradient{$gradient}<shading> //= do {
             enum « :Axial(2) :Stitching(3), :Radial(3) »;
             my @color-stops;
@@ -263,7 +263,7 @@ class HTML::Canvas::To::PDF {
                 }
             }
 
-            PDF::DAO.coerce: :dict{
+            PDF::COS.coerce: :dict{
                 :$ShadingType,
                 ($gradient.type eq 'Linear'
                  ?? :Background(@color-stops.tail<rgb>)
@@ -290,7 +290,7 @@ class HTML::Canvas::To::PDF {
                          ];
             # construct a type 2 (shading) pattern
             my %dict = :Type(:name<Pattern>), :PatternType(2), :@Matrix, :$Shading;
-            my $Pattern = $!gfx.resource-key(PDF::DAO.coerce(:%dict));
+            my $Pattern = $!gfx.resource-key(PDF::COS.coerce(:%dict));
             :$Pattern;
         }
     }
@@ -532,6 +532,7 @@ class HTML::Canvas::To::PDF {
     method arc(Numeric \x, Numeric \y, Numeric \r,
                Numeric $startAngle is copy, Numeric $endAngle is copy, Bool $anti-clockwise?) {
 
+        # limit to one full rotation
         if $anti-clockwise {
             $endAngle = $startAngle
                 if $startAngle - $endAngle > 2 * pi;
@@ -552,7 +553,7 @@ class HTML::Canvas::To::PDF {
 
         $n ||= do {
             # further analyse start/end in the same quadrant
-            # ~ full circle, or small short arc?
+            # ~ full circle, or short arc?
             my \theta = $endAngle - $startAngle;
             theta < pi ?? 0 !! 4;
         }
