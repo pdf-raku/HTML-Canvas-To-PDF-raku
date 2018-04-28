@@ -1,7 +1,6 @@
 use v6;
 class HTML::Canvas::To::PDF {
 
-    use Color;
     use HTML::Canvas:ver(v0.0.2+);
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
@@ -11,6 +10,7 @@ class HTML::Canvas::To::PDF {
     use PDF::COS;
     use PDF::Content:ver(v0.0.5+);
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
+    use PDF::Content::Color :rgb, :gray;
     use PDF::Content::Matrix;
     use PDF::Content::Image;
     use PDF::Content::Image::PNG;
@@ -137,7 +137,7 @@ class HTML::Canvas::To::PDF {
     method clearRect(Numeric \x, Numeric \y, Numeric \w, Numeric \h) {
         # stub - should etch a clipping path. not paint a white rectangle
         $!gfx.Save;
-        $!gfx.FillColor = :DeviceGray[1];
+        $!gfx.FillColor = gray(1);
         $!gfx.FillAlpha = 1;
         $!gfx.Rectangle( |self!coords(x, y + h), pt(w), pt(h) );
         $!gfx.Fill;
@@ -177,7 +177,7 @@ class HTML::Canvas::To::PDF {
         }
         default {
             with $!canvas.css.background-color {
-                $!gfx.FillColor = :DeviceRGB[ .rgb.map: ( */255 ) ];
+                $!gfx.FillColor = rgb( |.rgb.list );
                 $!gfx.FillAlpha = .a / 255;
             }
         }
@@ -185,8 +185,8 @@ class HTML::Canvas::To::PDF {
     method !make-pattern(HTML::Canvas::Pattern $pattern --> Pair) {
         my @ctm = $!gfx.CTM.list;
         $!cache.pattern{$pattern}{@ctm.Str} //= do {
-            my Bool \repeat-x = ? ($pattern.repetition eq 'repeat'|'repeat-x');
-            my Bool \repeat-y = ? ($pattern.repetition eq 'repeat'|'repeat-y');
+            my Bool \repeat-x = ? ($pattern.repetition ~~ 'repeat'|'repeat-x');
+            my Bool \repeat-y = ? ($pattern.repetition ~~ 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
             my PDF::Content::XObject $xobject = ($!cache.image{$image} //= PDF::Content::Image.open: $image.data-uri);
@@ -305,7 +305,7 @@ class HTML::Canvas::To::PDF {
         }
         default {
             with $!canvas.css.color {
-                $!gfx.StrokeColor = :DeviceRGB[ .rgb.map: ( */255 ) ];
+                $!gfx.StrokeColor = rgb( |.rgb );
                 $!gfx.StrokeAlpha = .a / 255;
             }
         }
@@ -388,7 +388,7 @@ class HTML::Canvas::To::PDF {
                 $_;
             }
         }
-        when .image-type eq 'PNG'|'JPEG'|'GIF' {
+        when .image-type ~~ 'PNG'|'JPEG'|'GIF' {
             given $!cache.image{$_} //= PDF::Content::Image.open: .data-uri {
                 $width = .width;
                 $height = .height;
@@ -399,7 +399,7 @@ class HTML::Canvas::To::PDF {
             # something we can't handle - draw placeholder
             my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
             $form.graphics: {
-                .FillColor = :DeviceRGB[.8, .9, .9];
+                .FillColor = rgb(.8, .9, .9);
                 .FillAlpha = .45;
                 .Rectangle(0, 0, $width, $height);
                 .Fill;
