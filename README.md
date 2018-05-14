@@ -6,7 +6,7 @@ This backend is **experimental**. At this stage, it is intended primarily for be
 
 ```
 use v6;
-# Create a simple Canvas. Save as HTML and PDF
+# Create a simple Canvas. Save as PDF
 
 use PDF::Lite;
 use HTML::Canvas;

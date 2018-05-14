@@ -177,7 +177,7 @@ class HTML::Canvas::To::PDF {
         }
         default {
             with $!canvas.css.background-color {
-                $!gfx.FillColor = rgb( |.rgb.list );
+                $!gfx.FillColor = rgb( |.rgb.map(*/255) );
                 $!gfx.FillAlpha = .a / 255;
             }
         }
@@ -305,7 +305,7 @@ class HTML::Canvas::To::PDF {
         }
         default {
             with $!canvas.css.color {
-                $!gfx.StrokeColor = rgb( |.rgb );
+                $!gfx.StrokeColor = rgb( |.rgb.map(*/255) );
                 $!gfx.StrokeAlpha = .a / 255;
             }
         }
@@ -367,7 +367,7 @@ class HTML::Canvas::To::PDF {
     }
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         $!cache.canvas{$image}{"$width,$height"} //= do {
-            my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
+            my $form = $!gfx.xobject-form( :BBox[0, 0, $width, $height] );
             my $renderer = self.new: :gfx($form.gfx), :$width, :$height, :$!cache;
             $image.render($renderer);
             $form
@@ -396,8 +396,8 @@ class HTML::Canvas::To::PDF {
             }
         }
         default {
-            # something we can't handle - draw placeholder
-            my $form = $!gfx.xobject-form( :bbox[0, 0, $width, $height] );
+            # something we can't handle - draw a placeholder
+            my $form = $!gfx.xobject-form( :BBox[0, 0, $width, $height] );
             $form.graphics: {
                 .FillColor = rgb(.8, .9, .9);
                 .FillAlpha = .45;
