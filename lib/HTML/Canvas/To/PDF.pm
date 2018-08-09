@@ -12,10 +12,9 @@ class HTML::Canvas::To::PDF {
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Content::Color :rgb, :gray;
     use PDF::Content::Matrix;
-    use PDF::Content::Image;
     use PDF::Content::Image::PNG;
     use PDF::Content::XObject;
-    use CSS::Declarations::Font;
+    use CSS::Properties::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
@@ -31,7 +30,7 @@ class HTML::Canvas::To::PDF {
         has %.canvas{HTML::Canvas};
     }
     class Font
-        is CSS::Declarations::Font {
+        is CSS::Properties::Font {
 
          use PDF::Font::Loader;
          method font-obj(:$cache!) {
@@ -189,7 +188,7 @@ class HTML::Canvas::To::PDF {
             my Bool \repeat-y = ? ($pattern.repetition ~~ 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
-            my PDF::Content::XObject $xobject = ($!cache.image{$image} //= PDF::Content::Image.open: $image.data-uri);
+            my PDF::Content::XObject $xobject = ($!cache.image{$image} //= PDF::Content::XObject.open: $image.data-uri);
             my Numeric $image-width = $xobject.width;
             my Numeric $image-height = $xobject.height;
 
@@ -381,15 +380,17 @@ class HTML::Canvas::To::PDF {
         }
         when HTML::Canvas::ImageData {
             need PDF::IO;
-            my $fh = PDF::IO.coerce: .image.Blob.decode: "latin-1";
-            given $!cache.image{$_} //= PDF::Content::Image::PNG.open($fh) {
+            given $!cache.image{$_} //= do {
+                my $source = PDF::IO.coerce: .image.Blob.decode: "latin-1";
+                PDF::Content::XObject.open( :$source, :image-type<PNG> );
+              } {
                 $width = .width;
                 $height = .height;
                 $_;
             }
         }
         when .image-type ~~ 'PNG'|'JPEG'|'GIF' {
-            given $!cache.image{$_} //= PDF::Content::Image.open: .data-uri {
+            given $!cache.image{$_} //= PDF::Content::XObject.open: .data-uri {
                 $width = .width;
                 $height = .height;
                 $_;

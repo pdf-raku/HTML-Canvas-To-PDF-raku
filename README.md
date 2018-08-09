@@ -16,12 +16,12 @@ use HTML::Canvas::To::PDF;
 my PDF::Lite $pdf .= new;
 
 # a cache for shared resources such as fonts and images.
-my $cache = HTML::Canvas::To::PDF::Cache.new;
+my HTML::Canvas::To::PDF::Cache $cache .= new;
 
 for 1..2 -> $page {
     my HTML::Canvas $canvas .= new;
     my $gfx = $pdf.add-page.gfx;
-    my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas, :$cache;
+    my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas, :$cache;
 
     $canvas.context: -> \ctx {
         ctx.save; {
