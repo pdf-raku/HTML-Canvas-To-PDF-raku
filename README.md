@@ -1,4 +1,4 @@
-# perl6-HTML-Canvas-To-PDF
+# HTML-Canvas-To-PDF-p6
 
 This is a PDF rendering backend for HTML::Canvas. A canvas may be rendered to either a page, or an XObject form.
 
@@ -15,7 +15,8 @@ use HTML::Canvas::To::PDF;
 # render to a PDF page
 my PDF::Lite $pdf .= new;
 
-# a cache for shared resources such as fonts and images.
+# use a cache for shared resources such as fonts and images.
+# for faster production and smaller multi-page PDF files
 my HTML::Canvas::To::PDF::Cache $cache .= new;
 
 for 1..2 -> $page {

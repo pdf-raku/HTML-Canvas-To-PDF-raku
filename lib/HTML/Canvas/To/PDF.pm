@@ -14,6 +14,7 @@ class HTML::Canvas::To::PDF {
     use PDF::Content::Matrix;
     use PDF::Content::Image::PNG;
     use PDF::Content::XObject;
+    use PDF::Content::Font::CoreFont;
     use CSS::Properties::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
@@ -34,8 +35,21 @@ class HTML::Canvas::To::PDF {
 
          use PDF::Font::Loader;
          method font-obj(:$cache!) {
+             my Str $font-path;
              my $file = $.find-font;
-             $cache.font{$file} //= PDF::Font::Loader.load-font: :$file;
+             my $font-obj;
+             try {
+                 $font-obj = $cache.font{$file} //= PDF::Font::Loader.load-font: :$file;
+                 CATCH {
+                     default {
+                         # a very simple fallback. Doesn't attempt to find the most appropriate font.
+                         warn $_;
+                         warn "falling back to Courier core font";
+                         $font-obj = $cache.font<__FALLBACK__> //= PDF::Content::Font::CoreFont.load-font('Courier');
+                     }
+                 }
+             }
+             $font-obj;
          }
     }
     has Font $!font;
