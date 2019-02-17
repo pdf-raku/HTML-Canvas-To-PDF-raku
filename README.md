@@ -1,14 +1,20 @@
 # HTML-Canvas-To-PDF-p6
 
-This is a PDF rendering backend for HTML::Canvas. A canvas may be rendered to either a page, or an XObject form.
+This is a PDF rendering back-end for HTML::Canvas.
 
-This backend is **experimental**. At this stage, it is intended primarily for benchmarking and regression testing, etc for the Perl 6 PDF and CSS tool-chains.
+- A canvas may be rendered to either a page, or an XObject form, using
+a PDF::Content graphics object
+- This back-end is compatible with PDF::Lite, PDF::Class and PDF::API6.
+- Supported canvas image formats are PNG, GIF, JPEG and PDF
+
+This back-end is **experimental**. At this stage, it is intended primarily for bench-marking and regression testing, etc for the Perl 6 PDF and CSS tool-chains.
 
 ```
 use v6;
 # Create a simple Canvas. Save as PDF
 
 use PDF::Lite;
+use PDF::Content;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 
@@ -21,7 +27,7 @@ my HTML::Canvas::To::PDF::Cache $cache .= new;
 
 for 1..2 -> $page {
     my HTML::Canvas $canvas .= new;
-    my $gfx = $pdf.add-page.gfx;
+    my PDF::Content $gfx = $pdf.add-page.gfx;
     my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas, :$cache;
 
     $canvas.context: -> \ctx {
@@ -40,3 +46,5 @@ for 1..2 -> $page {
 
 $pdf.save-as: "t/canvas-demo.pdf";
 ```
+
+## Images

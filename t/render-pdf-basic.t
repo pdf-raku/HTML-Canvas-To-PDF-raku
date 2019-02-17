@@ -8,8 +8,8 @@ use HTML::Canvas::To::PDF;
 
 my HTML::Canvas $canvas .= new;
 my PDF::Lite $pdf .= new;
-my $gfx = $pdf.add-page.gfx;
-my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas;
+my PDF::Content $gfx = $pdf.add-page.gfx;
+my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas;
 is $feed.width, 612, 'renderer default width';
 is $feed.height, 792, 'rendered default height';
 

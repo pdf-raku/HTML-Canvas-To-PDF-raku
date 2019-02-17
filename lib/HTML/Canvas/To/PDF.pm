@@ -503,7 +503,8 @@ class HTML::Canvas::To::PDF {
     #| Compute all four points for an arc that subtends the same total angle
     #| but is centered on the X-axis
     sub createSmallArc(Numeric \r, Numeric \a1, Numeric \a2) {
-        # adapted from http://hansmuller-flex.blogspot.co.nz/2011/04/approximating-circular-arc-with-cubic.html
+        # PDF doesn't have a semicircle operator. Need to approximate via Bezier curves. Adapted from
+        # http://hansmuller-flex.blogspot.co.nz/2011/04/approximating-circular-arc-with-cubic.html
         # courtesy of Hans Muller
         my Numeric \a = (a2 - a1) / 2.0;
 

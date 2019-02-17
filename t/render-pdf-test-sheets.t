@@ -542,7 +542,7 @@ test-sheet( -> \ctx {
       ctx.restore();
 });
 
-my \image = HTML::Canvas::Image.open("t/images/camelia-logo.png");
+my HTML::Canvas::Image \image .= open("t/images/camelia-logo.png");
 @html-body.push: HTML::Canvas.to-html: image, :style("visibility:hidden");
 
 test-sheet( -> \ctx {
