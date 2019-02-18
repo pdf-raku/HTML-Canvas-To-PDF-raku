@@ -22,7 +22,6 @@ use PDF::Lite;
 use PDF::Content;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
-use CSS::Properties::Units :px;
 
 # render to a PDF page
 my PDF::Lite $pdf .= open: "t/render-pdf-test-sheets.pdf";
@@ -39,7 +38,7 @@ for 1 .. $pages -> $page-num {
     my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas, :$cache;
     $canvas.context: -> \ctx {
         ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
-        ctx.fillRect(10, 25, -20px + $page.width, -45px + $page.height);
+        ctx.fillRect(10, 25, $page.width - 20, $page.height - 45);
         ctx.font = "12px Arial";
         ctx.fillStyle = "rgba(50, 50, 200, 0.8)";
         ctx.fillText("Page $page-num/$pages", 550, 15);
