@@ -24,7 +24,7 @@ use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 
 # render to a PDF page
-my PDF::Lite $pdf .= open: "t/render-pdf-test-sheets.pdf";
+my PDF::Lite $pdf .= open: "examples/render-pdf-test-sheets.pdf";
 
 # use a cache for shared resources such as fonts and images.
 # for faster production and smaller multi-page PDF files
@@ -45,7 +45,7 @@ for 1 .. $pages -> $page-num {
     }
 }
 
-$pdf.save-as: "tmp/demo.pdf";
+$pdf.save-as: "examples/demo.pdf";
 ```
 
 ## Images
