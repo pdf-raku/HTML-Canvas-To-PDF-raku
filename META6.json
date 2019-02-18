@@ -9,6 +9,6 @@
     "tags"        : [ "html", "javascript", "pdf" ],
     "source-url"  : "git://github.com/p6-pdf/HTML-Canvas-To-PDF-p6.git",
     "provides"    : {
-        "HTML::Canvas::To::PDF"  : "lib/HTML/Canvas/To/PDF.pm"
+        "HTML::Canvas::To::PDF"  : "lib/HTML/Canvas/To/PDF.pm6"
      }
 }
