@@ -6,8 +6,6 @@ srand(123456);
 
 my $read-me = "README.md".IO.slurp;
 
-mkdir "tmp";
-
 $read-me ~~ /^ $<waffle>=.*? +%% ["```" \n? $<code>=.*? "```" \n?] $/
     or die "README.md parse failed";
 
