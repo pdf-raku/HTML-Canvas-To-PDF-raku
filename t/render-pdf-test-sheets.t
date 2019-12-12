@@ -22,7 +22,7 @@ my $cache = HTML::Canvas::To::PDF::Cache.new;
 sub test-sheet(&markup) {
     my HTML::Canvas $canvas .= new;
     my $gfx = $pdf.add-page.gfx;
-    $gfx.comment-ops = True;
+    $gfx.comment = True;
     my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas, :$cache;
     my Bool $clean = True;
     $sheet-no++;
