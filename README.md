@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/p6-pdf/HTML-Canvas-To-PDF-p6.svg?branch=master)](https://travis-ci.org/p6-pdf/HTML-Canvas-To-PDF-p6)
 
-This is a PDF rendering back-end for HTML::Canvas.
+This is a PDF rendering back-end for the HTML::Canvas module.
 
 - A canvas may be rendered to either a page, or an XObject form, using
 a PDF::Content graphics object
