@@ -421,7 +421,9 @@ class HTML::Canvas::To::PDF:ver<0.0.3> {
             $form;
         }
     }
-    multi method drawImage( Drawable $image, Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh, Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
+    multi method drawImage( Drawable $image,
+                            Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh,
+                            Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
             my $ga = $!canvas.globalAlpha;
