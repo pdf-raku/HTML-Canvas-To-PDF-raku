@@ -1,6 +1,6 @@
-# HTML-Canvas-To-PDF-p6
+# HTML-Canvas-To-PDF-raku
 
-[![Build Status](https://travis-ci.org/p6-pdf/HTML-Canvas-To-PDF-p6.svg?branch=master)](https://travis-ci.org/p6-pdf/HTML-Canvas-To-PDF-p6)
+[![Build Status](https://travis-ci.org/pdf-raku/HTML-Canvas-To-PDF-raku.svg?branch=master)](https://travis-ci.org/pdf-raku/HTML-Canvas-To-PDF-raku)
 
 This is a PDF rendering back-end for the HTML::Canvas module.
 
@@ -47,5 +47,3 @@ for 1 .. $pages -> $page-num {
 
 $pdf.save-as: "examples/demo.pdf";
 ```
-
-## Images
