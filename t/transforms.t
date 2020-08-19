@@ -23,24 +23,20 @@ sub test-page(&markup) {
     my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas;
     my Bool $clean = True;
     $page-no++;
-        $canvas.context(
+    try $canvas.context(
             -> \ctx {
                 $y = 0;
                 ctx.font = "20pt times";
                 &markup(ctx, $gfx);
             });
 
-    try {
-        CATCH {
-            default {
-                warn "stopped on page $page-no: {.message}";
-                $clean = False;
-                # flush
-                $canvas.beginPath if $canvas.subpath;
-                $canvas.restore while $canvas.gsave;
-                $canvas._finish;
-            }
-        }
+    with $! {
+        warn "stopped on page $page-no: {.message}";
+        $clean = False;
+        # flush
+        $canvas.path.flush;
+        $canvas.restore while $canvas.gsave;
+        $canvas._finish;
     }
 
     ok $clean, "completion of page $page-no";

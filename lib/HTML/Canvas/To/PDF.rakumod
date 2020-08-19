@@ -1,9 +1,10 @@
 use v6;
-class HTML::Canvas::To::PDF:ver<0.0.3> {
+class HTML::Canvas::To::PDF:ver<0.0.4> {
 
-    use HTML::Canvas:ver(v0.0.2+);
+    use HTML::Canvas:ver(v0.0.11+) :FillRule;
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
+    use HTML::Canvas::Path2D;
     use HTML::Canvas::Image;
     use HTML::Canvas::ImageData;
     use PDF:ver(v0.2.1+);
@@ -168,11 +169,22 @@ class HTML::Canvas::To::PDF:ver<0.0.3> {
         }
     }
     method beginPath() { }
-    method fill() {
+    multi method fill(HTML::Canvas::Path2D $path, FillRule $rule = 'nonzero') {
+        self."{.key}"(|.value) for $path.calls();
+        self.fill($rule);
+    }
+    multi method fill('evenodd') {
+        $!gfx.EOFill;
+    }
+    multi method fill(Str $?) {
         $!gfx.Fill;
     }
-    method stroke() {
+    multi method stroke() {
         $!gfx.Stroke;
+    }
+    multi method stroke(HTML::Canvas::Path2D $path) {
+        self."{.key}"(|.value) for $path.calls();
+        self.stroke();
     }
     method clip() {
         $!gfx.Clip;
@@ -480,11 +492,13 @@ class HTML::Canvas::To::PDF:ver<0.0.3> {
     }
     method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
-    method setLineDash(List $pattern) {
-        $!gfx.SetDashPattern($pattern, $!canvas.lineDashOffset)
+    method setLineDash(*@pattern) {
+        $!gfx.SetDashPattern(@pattern.item, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
-    method moveTo(Numeric \x, Numeric \y) { $!gfx.MoveTo( |self!coords(x, y)) }
+    method moveTo(Numeric \x, Numeric \y) {
+        $!gfx.MoveTo( |self!coords(x, y));
+    }
     method lineTo(Numeric \x, Numeric \y) {
         $!gfx.LineTo( |self!coords(x, y));
     }
