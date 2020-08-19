@@ -15,7 +15,7 @@ my HTML::Canvas::To::PDF $feed .= new: :$gfx :$canvas;
 
 # adapted from https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill
 
-ctx.context: -> \ctx {
+$canvas.context: -> \ctx {
     # Create path
     my HTML::Canvas::Path2D \region .= new;
     region.moveTo(30, 90);
@@ -36,7 +36,7 @@ ctx.context: -> \ctx {
 
 # save canvas as as PDF
 lives-ok { $pdf.save-as: "t/path-2d.pdf" };
-my $html = "<html><body>{ ctx.to-html( :width(612), :height(792) ) }</body></html>";
+my $html = "<html><body>{ $canvas.to-html( :width(612), :height(792) ) }</body></html>";
 "t/path-2d.html".IO.spurt: $html;
 
 done-testing();

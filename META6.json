@@ -6,7 +6,7 @@
     "PDF::Lite",
     "PDF::Content",
     "Color",
-    "PDF::Font::Loader",
+    "PDF::Font::Loader:ver<0.3.0+>",
     "CSS::Properties"
   ],
   "description": "PDF Rendering backend for the HTML Canvas (2D) API",
