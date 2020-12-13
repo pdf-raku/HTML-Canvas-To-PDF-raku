@@ -1,7 +1,7 @@
 {
   "auth": "github:pdf-raku",
   "depends": [
-    "HTML::Canvas:ver<0.0.12+>",
+    "HTML::Canvas:ver<0.0.11+>",
     "JSON::Fast",
     "PDF:ver<0.4.4+>",
     "PDF::Lite",

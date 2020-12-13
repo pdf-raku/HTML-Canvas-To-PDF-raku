@@ -1,7 +1,7 @@
 use v6;
 class HTML::Canvas::To::PDF:ver<0.0.4> {
 
-    use HTML::Canvas:ver(v0.0.12+) :FillRule;
+    use HTML::Canvas:ver(v0.0.11+) :FillRule;
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Path2D;
