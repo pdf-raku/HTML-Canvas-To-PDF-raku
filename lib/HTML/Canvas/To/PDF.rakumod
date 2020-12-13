@@ -1,15 +1,15 @@
 use v6;
 class HTML::Canvas::To::PDF:ver<0.0.4> {
 
-    use HTML::Canvas:ver(v0.0.11+) :FillRule;
+    use HTML::Canvas:ver(v0.0.12+) :FillRule;
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Path2D;
     use HTML::Canvas::Image;
     use HTML::Canvas::ImageData;
     use PDF:ver(v0.2.1+);
-    use PDF::COS;
-    use PDF::Content:ver(v0.0.5+);
+    use PDF::COS::Dict;
+    use PDF::Content:ver(v0.4.6+);
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Content::Color :rgb, :gray;
     use PDF::Content::Matrix;
@@ -35,6 +35,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         is CSS::Properties::Font {
 
          use PDF::Font::Loader;
+         method ft-face { $.font-obj.face }
          method font-obj(:$cache!) {
              my $font-obj;
              try {
@@ -78,10 +79,10 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
 	    default {
 		.?js-ref // .perl;
 	    }
-            };
-            my \fmt = $op ~~ HTML::Canvas::LValue
-                ?? 'ctx.%s = %s;'
-                !! 'ctx.%s(%s);';
+        };
+        my \fmt = $op ~~ HTML::Canvas::LValue
+            ?? 'ctx.%s = %s;'
+            !! 'ctx.%s(%s);';
 	my $js = fmt.sprintf( $op, @jargs.join(", ") );
 	$!gfx.add-comment('--- ' ~ $js ~ ' ---')
     }
@@ -287,7 +288,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
                 }
             }
 
-            PDF::COS.coerce: :dict{
+            PDF::COS::Dict.COERCE: {
                 :$ShadingType,
                 ($gradient.type eq 'Linear'
                  ?? :Background(@color-stops.tail<rgb>)
@@ -314,7 +315,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
                          ];
             # construct a type 2 (shading) pattern
             my %dict = :Type(:name<Pattern>), :PatternType(2), :@Matrix, :$Shading;
-            my $Pattern = $!gfx.resource-key(PDF::COS.coerce(:%dict));
+            my $Pattern = $!gfx.resource-key(PDF::COS::Dict.COERCE: %dict);
             :$Pattern;
         }
     }
@@ -346,7 +347,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$join-name};
         $!gfx.LineJoin = $lj;
     }
-    method !text(Str $text, Numeric $x, Numeric $y, Numeric :$maxWidth) {
+    method !text(Str $text is copy, Numeric $x, Numeric $y, Numeric :$maxWidth) {
         my Numeric $scale = 100;
         if $maxWidth {
             my \width = $!canvas.measureText($text).width;
@@ -357,13 +358,16 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         $!gfx.BeginText;
         $!gfx.HorizScaling = $scale;
         $!gfx.text-position = self!coords($x, $y);
+        my \dir = $!canvas.direction;
         my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
         my HTML::Canvas::TextAlignment $align = do given $!canvas.textAlign {
-            when 'start' { $!canvas.direction eq 'ltr' ?? 'left' !! 'right' }
-            when 'end'   { $!canvas.direction eq 'rtl' ?? 'left' !! 'right' }
+            when 'start' { dir eq 'ltr' ?? 'left' !! 'right' }
+            when 'end'   { dir eq 'rtl' ?? 'left' !! 'right' }
             default { $_ }
         }
 
+        # todo: proper text bidi processing.
+        $text .= flip if dir eq 'rtl';
         $!gfx.print($text, :$align, :$baseline);
         $!gfx.EndText;
     }
@@ -406,7 +410,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         when HTML::Canvas::ImageData {
             need PDF::IO;
             given $!cache.image{$_} //= do {
-                my $source = PDF::IO.coerce: .image.Blob.decode: "latin-1";
+                my $source = PDF::IO.COERCE: .image.Blob.decode: "latin-1";
                 PDF::Content::XObject.open( :$source, :image-type<PNG> );
               } {
                 $width = .width;
@@ -492,8 +496,8 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
     }
     method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
-    method setLineDash(*@pattern) {
-        $!gfx.SetDashPattern(@pattern.item, $!canvas.lineDashOffset)
+    method setLineDash(@pattern) {
+        $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
     method moveTo(Numeric \x, Numeric \y) {
