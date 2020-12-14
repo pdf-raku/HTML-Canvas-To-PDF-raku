@@ -496,7 +496,11 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
     }
     method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
-    method setLineDash(@pattern) {
+    multi method setLineDash(@pattern) {
+        $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
+    }
+    #| HTML::Canvas v0.0.11- compatibility
+    multi method setLineDash(*@pattern) {
         $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
