@@ -1,3 +1,6 @@
+{{$NEXT}}
+  - Integrate with Text::FriBidi for bidirectional text support
+
 Release 0.0.4
 - Support fill([[$path,] rule]) arguments, introduced with
   HTML::Canvas v0.0.11

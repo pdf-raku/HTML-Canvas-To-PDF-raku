@@ -1,14 +1,15 @@
 {
-  "auth": "github:pdf-raku",
+  "auth": "cpan:WARRINGD",
   "depends": [
     "HTML::Canvas:ver<0.0.11+>",
     "JSON::Fast",
     "PDF:ver<0.4.4+>",
     "PDF::Lite",
     "PDF::Content:ver<0.4.6+>",
-    "Color",
     "PDF::Font::Loader:ver<0.3.0+>",
-    "CSS::Properties"
+    "Color",
+    "CSS::Properties",
+    "Text::FriBidi"
   ],
   "description": "PDF Rendering backend for the HTML Canvas (2D) API",
   "license": "Artistic-2.0",

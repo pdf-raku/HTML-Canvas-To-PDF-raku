@@ -16,6 +16,8 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
     use PDF::Content::Image::PNG;
     use PDF::Content::XObject;
     use PDF::Content::Font::CoreFont;
+    use Text::FriBidi::Defs :FriBidiPar;
+    use Text::FriBidi::Line;
     use CSS::Properties::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
@@ -153,19 +155,19 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         $!gfx.Save;
         $!gfx.FillColor = gray(1);
         $!gfx.FillAlpha = 1;
-        $!gfx.Rectangle( |self!coords(x, y + h), pt(w), pt(h) );
+        $!gfx.Rectangle: |self!coords(x, y + h), pt(w), pt(h);
         $!gfx.Fill;
         $!gfx.Restore;
     }
     method fillRect(Numeric \x, Numeric \y, Numeric \w, Numeric \h ) {
         unless $!gfx.FillAlpha =~= 0 {
-            $!gfx.Rectangle( |self!coords(x, y + h), pt(w), pt(h) );
+            $!gfx.Rectangle: |self!coords(x, y + h), pt(w), pt(h);
             $!gfx.Fill;
         }
     }
     method strokeRect(Numeric \x, Numeric \y, Numeric \w, Numeric \h ) {
         unless $!gfx.StrokeAlpha =~= 0 {
-            $!gfx.Rectangle( |self!coords(x, y + h), pt(w), pt(h) );
+            $!gfx.Rectangle: |self!coords(x, y + h), pt(w), pt(h);
             $!gfx.CloseStroke;
         }
     }
@@ -367,8 +369,11 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
         }
 
         # todo: proper text bidi processing.
-        $text .= flip if dir eq 'rtl';
-        $!gfx.print($text, :$align, :$baseline);
+        my UInt $direction = $!canvas.direction eq 'rtl'
+            ?? FRIBIDI_PAR_RTL
+            !! FRIBIDI_PAR_LTR;
+        my Text::FriBidi::Line $line .= new(:$text, :$direction);
+        $!gfx.print($line.Str, :$align, :$baseline);
         $!gfx.EndText;
     }
     method font(Str $font-style) {
@@ -489,7 +494,7 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
 	    $!gfx.FillAlpha *= $ga;
 	}
 
-        $!gfx.do($xobject, |self!coords($dx, $dy), |%opt);
+        $!gfx.do: $xobject, |self!coords($dx, $dy), |%opt;
 
 	$!gfx.Restore
 	    unless $ga =~= 1;
@@ -499,27 +504,27 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
     multi method setLineDash(@pattern) {
         $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
-    #| HTML::Canvas v0.0.11- compatibility
+    #| HTML::Canvas v0.0.11- backwards compatibility
     multi method setLineDash(*@pattern) {
         $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
     method moveTo(Numeric \x, Numeric \y) {
-        $!gfx.MoveTo( |self!coords(x, y));
+        $!gfx.MoveTo: |self!coords(x, y);
     }
     method lineTo(Numeric \x, Numeric \y) {
-        $!gfx.LineTo( |self!coords(x, y));
+        $!gfx.LineTo: |self!coords(x, y);
     }
     method quadraticCurveTo(Numeric \cp1x, Numeric \cp1y, Numeric \x, Numeric \y) {
         my \cp2x = cp1x + 2/3 * (x - cp1x);
         my \cp2y = cp1y + 2/3 * (y - cp1y);
-        $!gfx.CurveTo( |self!coords(cp1x, cp1y), |self!coords(cp2x, cp2y), |self!coords(x, y) );
+        $!gfx.CurveTo: |self!coords(cp1x, cp1y), |self!coords(cp2x, cp2y), |self!coords(x, y);
      }
      method bezierCurveTo(Numeric \cp1x, Numeric \cp1y, Numeric \cp2x, Numeric \cp2y, Numeric \x, Numeric \y) {
-        $!gfx.CurveTo( |self!coords(cp1x, cp1y), |self!coords(cp2x, cp2y), |self!coords(x, y) );
+        $!gfx.CurveTo: |self!coords(cp1x, cp1y), |self!coords(cp2x, cp2y), |self!coords(x, y);
     }
     method rect(\x, \y, \w, \h) {
-        $!gfx.Rectangle( |self!coords(x, y + h), pt(w), pt(h) );
+        $!gfx.Rectangle: |self!coords(x, y + h), pt(w), pt(h);
         $!gfx.ClosePath;
     }
 
@@ -617,14 +622,13 @@ class HTML::Canvas::To::PDF:ver<0.0.4> {
             .grep({.[0] !=~= [.1]}) \
             .map: { createSmallArc(r, .[0], .[1]); };
 
-        $!gfx.MoveTo( |self!coords(x + .<x1>, y + .<y1>) )
+        $!gfx.MoveTo: |self!coords(x + .<x1>, y + .<y1>)
             with @arcs[0];
 
         for @arcs {
-            $!gfx.CurveTo( |self!coords(x + .<x2>, y + .<y2>),
+            $!gfx.CurveTo: |self!coords(x + .<x2>, y + .<y2>),
                            |self!coords(x + .<x3>, y + .<y3>),
-                           |self!coords(x + .<x4>, y + .<y4>),
-                         );
+                           |self!coords(x + .<x4>, y + .<y4>);
         }
     }
 
