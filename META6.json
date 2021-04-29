@@ -1,5 +1,10 @@
 {
   "auth": "cpan:WARRINGD",
+  "authors": [
+    "David Warring"
+  ],
+  "build-depends": [
+  ],
   "depends": [
     "HTML::Canvas:ver<0.0.13+>",
     "JSON::Fast",
@@ -18,11 +23,15 @@
   "provides": {
     "HTML::Canvas::To::PDF": "lib/HTML/Canvas/To/PDF.rakumod"
   },
+  "resources": [
+  ],
   "source-url": "git://github.com/pdf-raku/HTML-Canvas-To-PDF-raku.git",
   "tags": [
     "html",
     "javascript",
     "pdf"
   ],
-  "version": "0.0.4"
+  "test-depends": [
+  ],
+  "version": "0.0.5"
 }
