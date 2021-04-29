@@ -1,11 +1,11 @@
 {
   "auth": "cpan:WARRINGD",
   "depends": [
-    "HTML::Canvas:ver<0.0.11+>",
+    "HTML::Canvas:ver<0.0.13+>",
     "JSON::Fast",
     "PDF:ver<0.4.4+>",
     "PDF::Lite",
-    "PDF::Content:ver<0.4.6+>",
+    "PDF::Content:ver<0.5.1+>",
     "PDF::Font::Loader:ver<0.3.0+>",
     "Color",
     "CSS::Properties",

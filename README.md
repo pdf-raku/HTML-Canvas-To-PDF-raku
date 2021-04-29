@@ -20,7 +20,7 @@ use v6;
 
 use PDF::Lite;
 use PDF::Content;
-use HTML::Canvas;
+use PDF::Content::Page;
 use HTML::Canvas::To::PDF;
 
 # render to a PDF page
@@ -29,14 +29,12 @@ my PDF::Lite $pdf .= open: "examples/render-pdf-test-sheets.pdf";
 # use a cache for shared resources such as fonts and images.
 # for faster production and smaller multi-page PDF files
 my HTML::Canvas::To::PDF::Cache $cache .= new;
-my $pages = $pdf.page-count;
+my UInt $pages = $pdf.page-count;
 
 for 1 .. $pages -> $page-num {
-    my $page = $pdf.page($page-num);
-    my HTML::Canvas $canvas .= new;
+    my PDF::Content::Page $page = $pdf.page($page-num);
     my PDF::Content $gfx = $page.pre-gfx;
-    my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas, :$cache;
-    $canvas.context: -> \ctx {
+    $gfx.canvas: :$cache, -> \ctx {
         ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
         ctx.fillRect(10, 25, $page.width - 20, $page.height - 45);
         ctx.font = "12px Arial";

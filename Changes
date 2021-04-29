@@ -1,5 +1,6 @@
 {{$NEXT}}
   - Integrate with Text::FriBidi for bidirectional text support
+  - Upgrade HTML::Canvas and PDF::Content
 
 Release 0.0.4
 - Support fill([[$path,] rule]) arguments, introduced with
