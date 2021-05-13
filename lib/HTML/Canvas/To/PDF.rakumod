@@ -18,7 +18,7 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
     use PDF::Content::Font::CoreFont;
     use Text::FriBidi::Defs :FriBidiPar;
     use Text::FriBidi::Line;
-    use CSS::Properties::Font;
+    use CSS::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
     has PDF::Content $.gfx handles <content content-dump> is required;
@@ -34,7 +34,7 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
         has %.canvas{HTML::Canvas};
     }
     class Font
-        is CSS::Properties::Font {
+        is CSS::Font {
 
          use PDF::Font::Loader;
          method ft-face { $.font-obj.face }
