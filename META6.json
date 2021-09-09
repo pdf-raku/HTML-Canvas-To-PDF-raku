@@ -6,14 +6,15 @@
   "build-depends": [
   ],
   "depends": [
-    "HTML::Canvas:ver<0.0.13+>",
+    "HTML::Canvas:ver<0.0.17+>",
     "JSON::Fast",
     "PDF:ver<0.4.4+>",
     "PDF::Lite",
     "PDF::Content:ver<0.5.1+>",
     "PDF::Font::Loader:ver<0.3.0+>",
     "Color",
-    "CSS::Properties:ver<0.7.0+>",
+    "CSS::Properties:ver<0.7.5+>",
+    "CSS::Font::Resources:ver<0.0.2+>",
     "Text::FriBidi"
   ],
   "description": "PDF Rendering backend for the HTML Canvas (2D) API",

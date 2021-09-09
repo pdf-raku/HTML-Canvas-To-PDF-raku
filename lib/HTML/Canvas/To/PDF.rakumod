@@ -1,21 +1,22 @@
 use v6;
 class HTML::Canvas::To::PDF:ver<0.0.5> {
 
-    use HTML::Canvas:ver(v0.0.11+) :FillRule;
+    use HTML::Canvas :FillRule;
     use HTML::Canvas::Gradient;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Path2D;
     use HTML::Canvas::Image;
     use HTML::Canvas::ImageData;
-    use PDF:ver(v0.2.1+);
+    use PDF;
     use PDF::COS::Dict;
-    use PDF::Content:ver(v0.4.6+);
-    use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Content::Color :rgb, :gray;
-    use PDF::Content::Matrix;
-    use PDF::Content::Image::PNG;
-    use PDF::Content::XObject;
+    use PDF::Content::FontObj;
     use PDF::Content::Font::CoreFont;
+    use PDF::Content::Image::PNG;
+    use PDF::Content::Matrix;
+    use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
+    use PDF::Content::XObject;
+    use PDF::Content;
     use Text::FriBidi::Defs :FriBidiPar;
     use Text::FriBidi::Line;
     use CSS::Font;
@@ -37,20 +38,29 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
         is CSS::Font {
 
          use PDF::Font::Loader;
+         use CSS::Font::Descriptor;
+         use CSS::Font::Resources;
+         use CSS::Font::Resources::Source;
+          has CSS::Font::Descriptor @.font-face;
+
+         my constant Resources = CSS::Font::Resources;
+         my constant Source = CSS::Font::Resources::Source;
+
          method ft-face { $.font-obj.face }
          method font-obj(:$cache!) {
-             my $font-obj;
-             try {
-                 my $file = $.find-font;
-                 $font-obj = $cache.font{$file} //= PDF::Font::Loader.load-font: :$file;
-                 CATCH {
-                     default {
-                         # a very simple fallback. Doesn't attempt to find the most appropriate font.
-                         warn $_;
-                         warn "falling back to Courier core font";
-                         $font-obj = $cache.font<__FALLBACK__> //= PDF::Content::Font::CoreFont.load-font('Courier');
-                     }
+             my Source $source = .head
+                 with Resources.sources(:font(self), :@!font-face, :formats('opentype'|'truetype'|'postscript'|'cff'));
+             my $key = do with $source { .Str } else { '' };
+             my PDF::Content::FontObj $font-obj;
+             $font-obj = $cache.font{$key} //= do {
+                 with $source {
+                     my $file = .IO.path;
+                     PDF::Font::Loader.load-font: :$file;
                  }
+                 else {
+                    warn "falling back to Courier font";
+                    PDF::Content::Font::CoreFont.load-font('Courier');
+                }
              }
              $font-obj;
          }
@@ -79,7 +89,7 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
 		.to-js('ctx');
 	    }
 	    default {
-		.?js-ref // .perl;
+		.?js-ref // .raku;
 	    }
         };
         my \fmt = $op ~~ HTML::Canvas::LValue
@@ -115,9 +125,10 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
 
     method _start {
         $!font .= new;
+        $!font.font-face = $!canvas.font-face;
         $!font.css = $!canvas.css;
         $!gfx.Save;
-        # clip graphics to outsde of canvas
+        # clip graphics to outside of canvas
         $!gfx.Rectangle(0, 0, pt($!width), pt($!height) );
         $!gfx.ClosePath;
         $!gfx.Clip;
@@ -443,8 +454,10 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
         }
     }
     multi method drawImage( Drawable $image,
-                            Numeric \sx, Numeric \sy, Numeric \sw, Numeric \sh,
-                            Numeric \dx, Numeric \dy, Numeric \dw, Numeric \dh) {
+                            Numeric \sx, Numeric \sy,
+                            Numeric \sw, Numeric \sh,
+                            Numeric \dx, Numeric \dy,
+                            Numeric \dw, Numeric \dh) {
         unless sw =~= 0 || sh =~= 0 {
             $!gfx.Save;
             my $ga = $!canvas.globalAlpha;
@@ -453,9 +466,9 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
 		$!gfx.FillAlpha *= $ga;
 	    }
             # position at top right of visible area
-            $!gfx.transform: :translate(self!coords(dx, dy));
+            $!gfx.transform: :translate(self!coords(dx, dy + dh));
             # clip to visible area
-            $!gfx.Rectangle: pt(0), pt(-dh), pt(dw), pt(dh);
+            $!gfx.Rectangle: pt(0), pt(0), pt(dw), pt(dh);
             $!gfx.ClosePath;
             $!gfx.Clip;
             $!gfx.EndPath;
@@ -465,14 +478,14 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
             $!gfx.transform: :translate[ -sx * x-scale, sy * y-scale ]
                 if sx || sy;
 
-            my $width = dw;
-            my $height = dh;
+            my Numeric $width = dw;
+            my Numeric $height = dh;
             my PDF::Content::XObject $xobject = self!to-xobject($image, :$width, :$height);
 
             $width  *= x-scale;
             $height *= y-scale;
 
-            $!gfx.do: $xobject, :valign<top>, :$width, :$height;
+            $!gfx.do: $xobject, :valign<bottom>, :$width, :$height;
 
             $!gfx.Restore;
         }
@@ -501,11 +514,7 @@ class HTML::Canvas::To::PDF:ver<0.0.5> {
     }
     method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
-    multi method setLineDash(@pattern) {
-        $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
-    }
-    #| HTML::Canvas v0.0.11- backwards compatibility
-    multi method setLineDash(*@pattern) {
+    method setLineDash(@pattern) {
         $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }

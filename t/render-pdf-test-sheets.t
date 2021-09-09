@@ -497,7 +497,6 @@ test-sheet( -> \ctx {
 });
 
 test-sheet( -> \ctx {
-      $y = pad;
       ctx.fillText("Testing bezierCurveTo", 20, $y + textHeight);
       $y += textHeight + pad;
 
@@ -608,7 +607,6 @@ test-sheet( -> \ctx {
 });
 
 test-sheet( -> \ctx {
-      $y = pad;
       ctx.fillText("Testing Patterns", 20, $y + textHeight);
       $y += textHeight + pad + 10;
       constant h = 100;
@@ -630,7 +628,6 @@ test-sheet( -> \ctx {
 });
 
 test-sheet( -> \ctx {
-    $y = pad;
     ctx.fillText("Testing Gradients", 20, $y + textHeight);
     $y += textHeight + pad + 10;
     constant h = 100;

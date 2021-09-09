@@ -14,6 +14,11 @@ This back-end is **experimental**.
 It may be useful, if you wish to manipulate existing PDF files
 use the HTML Canvas API.
 
+If this module is installed, the PDF::Content `canvas()`
+method will automatically render to a graphics stream using the
+`HTML::Canvas::To::PDF` back-end. The backend can thus be used on
+PDF Pages or XObject Forms.
+
 ```
 use v6;
 # Finish an existing PDF. Add a background color and page numbers
@@ -29,6 +34,7 @@ my PDF::Lite $pdf .= open: "examples/render-pdf-test-sheets.pdf";
 # use a cache for shared resources such as fonts and images.
 # for faster production and smaller multi-page PDF files
 my HTML::Canvas::To::PDF::Cache $cache .= new;
+
 my UInt $pages = $pdf.page-count;
 
 for 1 .. $pages -> $page-num {

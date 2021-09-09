@@ -1,4 +1,6 @@
 {{$NEXT}}
+  - Integrate with HTML::Canvas 0.0.17+ `@font-face` font resource
+    management
 
 0.0.5  2021-04-29T17:07:13+12:00
   - Integrate with Text::FriBidi for bidirectional text support
