@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.0.6  2021-09-10T11:39:41+12:00
   - Integrate with HTML::Canvas 0.0.17+ `@font-face` font resource
     management
 
