@@ -5,7 +5,9 @@ plan 13;
 use PDF::Lite;
 use HTML::Canvas::Image;
 use HTML::Canvas;
-use HTML::Canvas::To::PDF;
+use HTML::Canvas::To::PDF;   # Primary PDF rendering (to t/)
+use HTML::Canvas::To::Cairo; # parallel Cairo rendering (to tmp/)
+use Cairo;
 
 my PDF::Lite $pdf .= new;
 my $sheet-no;
@@ -17,13 +19,17 @@ my \h = 20;
 my \pad = 10;
 my \textHeight = 20;
 
-my $cache = HTML::Canvas::To::PDF::Cache.new;
+# parallel dump of PDF rendered via Cairo backend
+my $surface = Cairo::Surface::PDF.create("tmp/render-pdf-test-sheets-cairo.pdf", 612, 792);
+
+my $cairo-cache = HTML::Canvas::To::Cairo::Cache.new;
+my $pdf-cache = HTML::Canvas::To::PDF::Cache.new;
 
 sub test-sheet(&markup) {
-    my HTML::Canvas $canvas .= new;
+    my HTML::Canvas $canvas .= new: :cache($cairo-cache), :$surface;
     my $gfx = $pdf.add-page.gfx;
     $gfx.comment = True;
-    my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas, :$cache;
+    my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas, :cache($pdf-cache);
     my Bool $clean = True;
     $sheet-no++;
 
@@ -48,6 +54,7 @@ sub test-sheet(&markup) {
     }
 
     ok $clean, "completion of page $sheet-no";
+    $surface.show_page;
     my $width = $feed.width;
     my $height = $feed.height;
     @html-body.push: "<hr/>" ~ $canvas.to-html( :$width, :$height );
@@ -676,6 +683,8 @@ test-sheet( -> \ctx {
       my \imgData2=ctx.getImageData(35,$y-5,60,60);
       ctx.putImageData(imgData2, 120, $y);
 });
+
+$surface.finish;
 
 lives-ok {$pdf.save-as("t/render-pdf-test-sheets.pdf")}, "pdf.save-as";
 
