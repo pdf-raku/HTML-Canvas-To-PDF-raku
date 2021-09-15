@@ -686,6 +686,7 @@ test-sheet( -> \ctx {
 
 $surface.finish;
 
+$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/render-pdf-test-sheets.pdf")}, "pdf.save-as";
 
 my $html = "<html><body>" ~ @html-body.join ~ "</body></html>";

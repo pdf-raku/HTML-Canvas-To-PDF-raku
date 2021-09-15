@@ -1,5 +1,5 @@
 use v6;
-class HTML::Canvas::To::PDF:ver<0.0.6> {
+class HTML::Canvas::To::PDF:ver<0.0.7> {
 
     use HTML::Canvas :FillRule;
     use HTML::Canvas::Gradient;
