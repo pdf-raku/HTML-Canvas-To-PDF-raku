@@ -466,9 +466,9 @@ class HTML::Canvas::To::PDF:ver<0.0.6> {
 		$!gfx.FillAlpha *= $ga;
 	    }
             # position at top right of visible area
-            $!gfx.transform: :translate(self!coords(dx, dy + dh));
+            $!gfx.transform: :translate(self!coords(dx, dy));
             # clip to visible area
-            $!gfx.Rectangle: pt(0), pt(0), pt(dw), pt(dh);
+            $!gfx.Rectangle: pt(0), pt(-dh), pt(dw), pt(dh);
             $!gfx.ClosePath;
             $!gfx.Clip;
             $!gfx.EndPath;
@@ -485,13 +485,12 @@ class HTML::Canvas::To::PDF:ver<0.0.6> {
             $width  *= x-scale;
             $height *= y-scale;
 
-            $!gfx.do: $xobject, :valign<bottom>, :$width, :$height;
+            $!gfx.do: $xobject, :valign<top>, :$width, :$height;
 
             $!gfx.Restore;
         }
     }
-    multi method drawImage(Drawable $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) is default {
-
+    multi method drawImage(Drawable $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) {
         my $width = $dw;
         my $height = $dh;
         my PDF::Content::XObject $xobject = self!to-xobject($image, :$width, :$height);
@@ -514,7 +513,7 @@ class HTML::Canvas::To::PDF:ver<0.0.6> {
     }
     method putImageData(HTML::Canvas::ImageData $image-data, Numeric $dx, Numeric $dy) { self.drawImage( $image-data, $dx, $dy) }
     method getLineDash() {}
-    method setLineDash(@pattern) {
+    method setLineDash(*@pattern) {
         $!gfx.SetDashPattern(@pattern, $!canvas.lineDashOffset)
     }
     method closePath() { $!gfx.ClosePath }
