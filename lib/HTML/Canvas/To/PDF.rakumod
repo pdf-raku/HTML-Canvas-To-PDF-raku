@@ -1,5 +1,5 @@
 use v6;
-class HTML::Canvas::To::PDF:ver<0.0.7> {
+class HTML::Canvas::To::PDF:ver<0.0.8> {
 
     use HTML::Canvas :FillRule;
     use HTML::Canvas::Gradient;
@@ -41,7 +41,7 @@ class HTML::Canvas::To::PDF:ver<0.0.7> {
          use CSS::Font::Descriptor;
          use CSS::Font::Resources;
          use CSS::Font::Resources::Source;
-          has CSS::Font::Descriptor @.font-face;
+         has CSS::Font::Descriptor @.font-face;
 
          my constant Resources = CSS::Font::Resources;
          my constant Source = CSS::Font::Resources::Source;
@@ -68,15 +68,16 @@ class HTML::Canvas::To::PDF:ver<0.0.7> {
     has Font $!font;
     has Cache $.cache .= new;
 
-    submethod TWEAK(PDF :$pdf)  {
+    submethod TWEAK(PDF :$pdf, :@font-face)  {
         $!gfx //= .add-page.gfx
             with $pdf;
-        with $!gfx.parent {
+        with $!gfx.canvas {
             $!width  //= .width;
             $!height //= .height;
         }
 
         with $!canvas {
+            .font-face.append: @font-face;
             .callback.push: self.callback;
         }
     }

@@ -40,7 +40,7 @@ my UInt $pages = $pdf.page-count;
 for 1 .. $pages -> $page-num {
     my PDF::Content::Page $page = $pdf.page($page-num);
     my PDF::Content $gfx = $page.pre-gfx;
-    $gfx.canvas: :$cache, -> \ctx {
+    $gfx.html-canvas: :$cache, -> \ctx {
         ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
         ctx.fillRect(10, 25, $page.width - 20, $page.height - 45);
         ctx.font = "12px Arial";

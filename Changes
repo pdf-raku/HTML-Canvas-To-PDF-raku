@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.0.8  2021-10-09T12:54:26+13:00
+  - upgrade to use PDF::Content v0.5.8+ canvas() method
+
 0.0.7  2021-09-16T06:24:20+12:00
   - Fix drawImage positioning
 

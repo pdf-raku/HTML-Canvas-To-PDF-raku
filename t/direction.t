@@ -46,7 +46,7 @@ $canvas.context: {
     .stroke;
 }
 
-lives-ok {$pdf.save-as("t/direction.pdf")}, "pdf.save-as";
+lives-ok {$pdf.save-as("t/direction.pdf");}, "pdf.save-as";
 
 # also save comparative HTML
 
@@ -54,6 +54,5 @@ my $width = $feed.width;
 my $height = $feed.height;
 my $html = "<html><body>{ $canvas.to-html( :$width, :$height ) }</body></html>";
 "t/direction.html".IO.spurt: $html;
-
 
 done-testing();
