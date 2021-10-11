@@ -20,7 +20,7 @@ my $measured-text;
 sub test-page(&markup) {
     my HTML::Canvas $canvas .= new;
     my $gfx = $pdf.add-page.gfx;
-    my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas;
+    my HTML::Canvas::To::PDF $feed .= new: :$gfx, :$canvas;
     my Bool $clean = True;
     $page-no++;
     try $canvas.context(
@@ -82,6 +82,8 @@ test-page(
       }
 });
 
+# ensure consistant document ID generation
+$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/transforms.pdf")}, "pdf.save-as";
 
 my $html = "<html><body>" ~ @html-body.join ~ "</body></html>";

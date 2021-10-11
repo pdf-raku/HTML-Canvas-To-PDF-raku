@@ -70,6 +70,8 @@ $canvas.context: -> \ctx {
     }; ctx.restore;
 }
 
+# ensure consistant document ID generation
+$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/render-pdf-basic.pdf")}, "pdf.save-as";
 
 # also save comparative HTML

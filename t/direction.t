@@ -46,6 +46,8 @@ $canvas.context: {
     .stroke;
 }
 
+# ensure consistant document ID generation
+$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/direction.pdf");}, "pdf.save-as";
 
 # also save comparative HTML
