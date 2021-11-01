@@ -9,6 +9,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     use HTML::Canvas::ImageData;
     use PDF;
     use PDF::COS::Dict;
+    use PDF::COS::Name;
     use PDF::Content::Color :rgb, :gray;
     use PDF::Content::FontObj;
     use PDF::Content::Font::CoreFont;
@@ -31,7 +32,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         has %.image{Drawable};
         has %.gradient{HTML::Canvas::Gradient};
         has %.pattern{HTML::Canvas::Pattern};
-        has %.font;
+        has PDF::Content::FontObj %.font;
         has %.canvas{HTML::Canvas};
     }
     class Font
@@ -42,17 +43,18 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
          use CSS::Font::Resources;
          use CSS::Font::Resources::Source;
          has CSS::Font::Descriptor @.font-face;
+         has Hash:D $.cache is required;
 
          my constant Resources = CSS::Font::Resources;
          my constant Source = CSS::Font::Resources::Source;
 
          method ft-face { $.font-obj.face }
-         method font-obj(:$cache!) {
+         method font-obj(--> PDF::Content::FontObj) {
              my Source $source = .head
                  with Resources.sources(:font(self), :@!font-face, :formats('opentype'|'truetype'|'postscript'|'cff'));
              my $key = do with $source { .Str } else { '' };
              my PDF::Content::FontObj $font-obj;
-             $font-obj = $cache.font{$key} //= do {
+             $font-obj = $!cache{$key} //= do {
                  with $source {
                      my $file = .IO.path;
                      PDF::Font::Loader.load-font: :$file;
@@ -125,7 +127,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     }
 
     method _start {
-        $!font .= new;
+        $!font .= new: :cache($!cache.font);
         $!font.font-face = $!canvas.font-face;
         $!font.css = $!canvas.css;
         $!gfx.Save;
@@ -301,13 +303,14 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
                      [.x0, .y1 - 2 * .y0, .r0, .x1, -.y0, .r1] with $gradient);
                 }
             }
+            my PDF::COS::Name() $ColorSpace = 'DeviceRGB';
 
             PDF::COS::Dict.COERCE: {
                 :$ShadingType,
                 ($gradient.type eq 'Linear'
                  ?? :Background(@color-stops.tail<rgb>)
                  !! ()),
-                :ColorSpace( :name<DeviceRGB> ),
+                :$ColorSpace,
                 :Domain[0, 1],
                 :$Coords,
                 :$Function,
@@ -328,7 +331,8 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
                           trans-y - $gradient-height*scale-y,
                          ];
             # construct a type 2 (shading) pattern
-            my %dict = :Type(:name<Pattern>), :PatternType(2), :@Matrix, :$Shading;
+            my PDF::COS::Name() $Type = 'Pattern';
+            my %dict = :$Type, :PatternType(2), :@Matrix, :$Shading;
             my $Pattern = $!gfx.resource-key(PDF::COS::Dict.COERCE: %dict);
             :$Pattern;
         }
@@ -390,7 +394,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     }
     method font(Str $font-style) {
         $!font.css = $!canvas.css;
-        my \pdf-font = $!gfx.use-font($!font.font-obj(:$!cache));
+        my \pdf-font = $!gfx.use-font($!font.font-obj);
         $!gfx.font = [ pdf-font, $!canvas.adjusted-font-size($!font.em) ];
     }
     method textBaseline(Str $_) {}
@@ -408,7 +412,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         $!gfx.Restore
     }
     method measureText(Str $text --> Numeric) {
-        $!canvas.adjusted-font-size: $!font.font-obj(:$!cache).stringwidth($text, $!font.em);
+        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($text, $!font.em);
     }
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         $!cache.canvas{$image}{"$width,$height"} //= do {
