@@ -610,18 +610,16 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             $n = 4 - $n;
         }
 
-        my @segments = (0..$n).map: {
+        my @arcs = (0..$n).map: {
             my \starting = $_ == 0;
             my \ending = $_ == $n;
             my \i = ($start-q + $_) % 4;
             my \a1 = starting ?? $startAngle !! @Quadrant[i];
             my \a2 = ending  ?? $endAngle    !! @Quadrant[i+1];
-            [a1, a2];
+            a1 =~= a2
+                ?? Empty
+                !! createSmallArc(r, a1, a2)
         }
-
-        my @arcs = @segments        \
-            .grep({.[0] !=~= [.1]}) \
-            .map: { createSmallArc(r, .[0], .[1]); };
 
         $!gfx.MoveTo: |self!coords(x + .<x1>, y + .<y1>)
             with @arcs[0];
