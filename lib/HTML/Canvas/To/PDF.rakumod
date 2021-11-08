@@ -29,46 +29,29 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
 
     my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
     class Cache {
+        use PDF::Font::Loader::FontObj;
         has %.image{Drawable};
         has %.gradient{HTML::Canvas::Gradient};
         has %.pattern{HTML::Canvas::Pattern};
-        has PDF::Content::FontObj %.font;
+        has PDF::Font::Loader::FontObj %.font;
         has %.canvas{HTML::Canvas};
     }
-    class Font
-        is CSS::Font {
-
-         use PDF::Font::Loader;
-         use CSS::Font::Descriptor;
-         use CSS::Font::Resources;
-         use CSS::Font::Resources::Source;
-         has CSS::Font::Descriptor @.font-face;
-         has Hash:D $.cache is required;
-
-         my constant Resources = CSS::Font::Resources;
-         my constant Source = CSS::Font::Resources::Source;
-
-         method ft-face { $.font-obj.face }
-         method font-obj(--> PDF::Content::FontObj) {
-             my Source $source = .head
-                 with Resources.sources(:font(self), :@!font-face, :formats('opentype'|'truetype'|'postscript'|'cff'));
-             my $key = do with $source { .Str } else { '' };
-             my PDF::Content::FontObj $font-obj;
-             $font-obj = $!cache{$key} //= do {
-                 with $source {
-                     my $file = .IO.path;
-                     PDF::Font::Loader.load-font: :$file;
-                 }
-                 else {
-                    warn "falling back to Courier font";
-                    PDF::Content::Font::CoreFont.load-font('Courier');
-                }
-             }
-             $font-obj;
-         }
+    class Font is CSS::Font {
+        use CSS::Font::Resources::Source;
+        use PDF::Font::Loader::CSS;
+        has PDF::Font::Loader::CSS $!font-loader handles<font-face>;
+        has Cache $.cache is required;
+        submethod TWEAK(:cache($), |c) {
+            $!font-loader .= new: |c;
+        }
+        method font-obj(Font:D $font:) {
+            my CSS::Font::Resources::Source $source = $!font-loader.source: :$font;
+            my $key = do with $source { .Str } else { '' };
+            $!cache.font{$key} //= $!font-loader.load-font: :$font, :$source;
+        }
     }
-    has Font $!font;
     has Cache $.cache .= new;
+    has Font $!font .= new: :$!cache;
 
     submethod TWEAK(PDF :$pdf, :@font-face)  {
         $!gfx //= .add-page.gfx
@@ -127,7 +110,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     }
 
     method _start {
-        $!font .= new: :cache($!cache.font);
+        $!font .= new: :$!cache;
         $!font.font-face = $!canvas.font-face;
         $!font.css = $!canvas.css;
         $!gfx.Save;
@@ -586,6 +569,11 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         my \a = $a % (2*pi);
         (0..3).first: { @Quadrant[$_] - $*TOLERANCE <= a <= @Quadrant[$_+1] + $*TOLERANCE };
     }
+    sub swap($a is rw, $b is rw) {
+        my $t = $a;
+        $a = $b;
+        $b = $t;
+    }
     method arc(Numeric \x, Numeric \y, Numeric \r,
                Numeric $startAngle is copy, Numeric $endAngle is copy, Bool $anti-clockwise?) {
 
@@ -617,8 +605,8 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
 
         if $anti-clockwise {
             # draw the complimentry arc
-            ($startAngle, $endAngle) = ($endAngle, $startAngle);
-            ($start-q, $end-q) = ($end-q, $start-q);
+            swap($startAngle, $endAngle);
+            swap($start-q, $end-q);
             $n = 4 - $n;
         }
 
