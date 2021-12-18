@@ -38,8 +38,8 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     }
     class Font is CSS::Font {
         use CSS::Font::Resources::Source;
-        use PDF::Font::Loader::CSS;
-        has PDF::Font::Loader::CSS $!font-loader handles<font-face>;
+        use PDF::Font::Manager;
+        has PDF::Font::Manager $!font-loader handles<font-face>;
         has Cache $.cache is required;
         submethod TWEAK(:cache($), |c) {
             $!font-loader .= new: |c;
