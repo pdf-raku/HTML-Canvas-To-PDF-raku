@@ -348,10 +348,18 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$join-name};
         $!gfx.LineJoin = $lj;
     }
-    method !text(Str $text is copy, Numeric $x, Numeric $y, Numeric :$maxWidth) {
+    method !bidi(Str:D $text! --> Str) {
+        my UInt $direction = $!canvas.direction eq 'rtl'
+            ?? FRIBIDI_PAR_RTL
+            !! FRIBIDI_PAR_LTR;
+        my Text::FriBidi::Line $line .= new(:$text, :$direction);
+        $line.Str;
+    }
+    method !text(Str $text, Numeric $x, Numeric $y, Numeric :$maxWidth) {
         my Numeric $scale = 100;
+        my $bidi = self!bidi: $text;
         if $maxWidth {
-            my \width = $!canvas.measureText($text).width;
+            my \width = $!canvas.measureText(Str, :$bidi).width;
             $scale = 100 * $maxWidth / width
                 if width > $maxWidth;
         }
@@ -367,12 +375,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             default { $_ }
         }
 
-        # todo: proper text bidi processing.
-        my UInt $direction = $!canvas.direction eq 'rtl'
-            ?? FRIBIDI_PAR_RTL
-            !! FRIBIDI_PAR_LTR;
-        my Text::FriBidi::Line $line .= new(:$text, :$direction);
-        $!gfx.print($line.Str, :$align, :$baseline);
+        $!gfx.print($bidi, :$align, :$baseline);
         $!gfx.EndText;
     }
     method font(Str $font-style) {
@@ -394,8 +397,8 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method measureText(Str $text --> Numeric) {
-        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($text, $!font.em);
+    method measureText(Str $text, :$bidi = self!bidi($text) --> Numeric) {
+        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($bidi, $!font.em);
     }
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         $!cache.canvas{$image}{"$width,$height"} //= do {
