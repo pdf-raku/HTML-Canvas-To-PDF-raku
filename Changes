@@ -1,6 +1,6 @@
 {{$NEXT}}
   - Implement backend for HTML::Canvas 0.0.17+ @font-face font
-    descriptors; integrated with PDF::Font::Manager
+    descriptors; integrated with PDF::Font::Loader::CSS
 
 0.0.8  2021-10-09T12:54:26+13:00
   - upgrade to use PDF::Content v0.5.8+ canvas() method
