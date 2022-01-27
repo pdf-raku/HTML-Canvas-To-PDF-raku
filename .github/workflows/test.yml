@@ -34,10 +34,10 @@ jobs:
           (tar xzf 2.7.4.tar.gz && cd harfbuzz-2.7.4 && ./autogen.sh && make)
           zef install --/test App::Prove6
           export LD_LIBRARY_PATH=`pwd`/harfbuzz-2.7.4/src/.libs
+          zef --/test install LibraryMake
           zef --deps-only install .
       - name: Run Tests
         run: |
           export LD_LIBRARY_PATH=`pwd`/harfbuzz-2.7.4/src/.libs
           prove6 -I. t
-          zef --/test install LibraryMake
           zef install .
