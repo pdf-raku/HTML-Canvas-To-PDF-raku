@@ -39,4 +39,5 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=`pwd`/harfbuzz-2.7.4/src/.libs
           prove6 -I. t
+          zef --/test install LibraryMake
           zef install .
