@@ -3,6 +3,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
 
     use HTML::Canvas :FillRule;
     use HTML::Canvas::Gradient;
+    use HTML::Canvas::Graphic;
     use HTML::Canvas::Pattern;
     use HTML::Canvas::Path2D;
     use HTML::Canvas::Image;
@@ -27,10 +28,9 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
     has Numeric $.width;  # canvas width in points
     has Numeric $.height; # canvas height in points
 
-    my subset Drawable where HTML::Canvas|HTML::Canvas::Image|HTML::Canvas::ImageData;
     class Cache {
         use PDF::Font::Loader::FontObj;
-        has %.image{Drawable};
+        has %.image;
         has %.gradient{HTML::Canvas::Gradient};
         has %.pattern{HTML::Canvas::Pattern};
         has PDF::Font::Loader::FontObj %.font;
@@ -47,7 +47,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         method font-obj(Font:D $font:) {
             my CSS::Font::Resources::Source $source = $!font-loader.source: :$font;
             my $key = do with $source { .Str } else { '' };
-            $!cache.font{$key} //= $!font-loader.load-font: :$font, :$source;
+            $!cache.font{$key} //= $!font-loader.load-font: :$font, :$source, :subset;
         }
     }
     has Cache $.cache .= new;
@@ -213,7 +213,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             my Bool \repeat-y = ? ($pattern.repetition ~~ 'repeat'|'repeat-y');
 
             my $image = $pattern.image;
-            my PDF::Content::XObject $xobject = ($!cache.image{$image} //= PDF::Content::XObject.open: $image.data-uri);
+            my PDF::Content::XObject $xobject = ($!cache.image{$image.html-id} //= PDF::Content::XObject.open: $image.data-uri);
             my Numeric $image-width = $xobject.width;
             my Numeric $image-height = $xobject.height;
 
@@ -408,15 +408,16 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             $form
         };
     }
-    method !to-xobject(Drawable $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
+    method !to-xobject(HTML::Canvas::Graphic $_, :$width! is rw, :$height! is rw --> PDF::Content::XObject) {
+        my $k := .html-id;
         when HTML::Canvas {
             $width = $_ with .html-width;
             $height = $_ with .html-height;
-            $!cache.image{$_} //= self!canvas-to-xobject($_, :$width, :$height);
+            $!cache.image{$k} //= self!canvas-to-xobject($_, :$width, :$height);
         }
         when HTML::Canvas::ImageData {
             need PDF::IO;
-            given $!cache.image{$_} //= do {
+            given $!cache.image{$k} //= do {
                 my $source = PDF::IO.COERCE: .image.Blob.decode: "latin-1";
                 PDF::Content::XObject.open( :$source, :image-type<PNG> );
               } {
@@ -426,7 +427,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             }
         }
         when .image-type ~~ 'PNG'|'JPEG'|'GIF' {
-            given $!cache.image{$_} //= PDF::Content::XObject.open: .data-uri {
+            given $!cache.image{$k} //= PDF::Content::XObject.open: .data-uri {
                 $width = .width;
                 $height = .height;
                 $_;
@@ -444,7 +445,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             $form;
         }
     }
-    multi method drawImage( Drawable $image,
+    multi method drawImage( HTML::Canvas::Graphic $image,
                             Numeric \sx, Numeric \sy,
                             Numeric \sw, Numeric \sh,
                             Numeric \dx, Numeric \dy,
@@ -481,7 +482,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
             $!gfx.Restore;
         }
     }
-    multi method drawImage(Drawable $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) {
+    multi method drawImage(HTML::Canvas::Graphic $image, Numeric $dx, Numeric $dy, Numeric $dw?, Numeric $dh?) {
         my $width = $dw;
         my $height = $dh;
         my PDF::Content::XObject $xobject = self!to-xobject($image, :$width, :$height);
