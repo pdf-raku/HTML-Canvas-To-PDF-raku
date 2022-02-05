@@ -1,5 +1,5 @@
 use v6;
-class HTML::Canvas::To::PDF:ver<0.0.8> {
+class HTML::Canvas::To::PDF:ver<0.0.9> {
 
     use HTML::Canvas :FillRule;
     use HTML::Canvas::Gradient;
@@ -47,7 +47,7 @@ class HTML::Canvas::To::PDF:ver<0.0.8> {
         method font-obj(Font:D $font:) {
             my CSS::Font::Resources::Source $source = $!font-loader.source: :$font;
             my $key = do with $source { .Str } else { '' };
-            $!cache.font{$key} //= $!font-loader.load-font: :$font, :$source, :subset;
+            $!cache.font{$key} //= $!font-loader.load-font: :$font, :$source;
         }
     }
     has Cache $.cache .= new;
