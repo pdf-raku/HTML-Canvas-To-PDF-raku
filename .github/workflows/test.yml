@@ -14,10 +14,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          #- macOS-latest
+          - macOS-latest
           #- windows-latest
         raku-version:
-##          - 'latest'
+          - 'latest'
           - '2021.12'
     runs-on: ${{ matrix.os }}
     steps:
@@ -25,19 +25,22 @@ jobs:
       - uses: Raku/setup-raku@v1
         with:
           raku-version: ${{ matrix.raku-version }}
-      - name: Install Dependencies
+      - name: Linux specific setup
+        if: contains(matrix.os, 'ubuntu')
         run: |
-          ## Requires Debian 11+
-          ##sudo apt-get install -y libharfbuzz-dev
+          sudo apt-get install -y libharfbuzz-dev
           sudo apt-get install -y libfribidi-dev
-          wget https://github.com/harfbuzz/harfbuzz/archive/3.3.1.tar.gz
-          (tar xzf 3.3.1.tar.gz && cd harfbuzz-3.3.1 && ./autogen.sh && make)
+      - name: macOS specific setup
+        if: contains(matrix.os, 'macOS')
+        run: |
+          brew update
+          brew install harfbuzz
+          brew install fribidi
+      - name: Install Raku Dependencies
+        run: |
           zef install --/test App::Prove6
-          export LD_LIBRARY_PATH=`pwd`/harfbuzz-3.3.1/src/.libs
-          zef --/test install LibraryMake
           zef --deps-only install .
       - name: Run Tests
         run: |
-          export LD_LIBRARY_PATH=`pwd`/harfbuzz-3.3.1/src/.libs
           prove6 -I. t
           zef install .

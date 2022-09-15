@@ -46,7 +46,7 @@ sub test-sheet(&markup) {
                 warn "stopped on page $sheet-no: {.message}";
                 $clean = False;
                 # flush
-                $canvas.beginPath if $canvas.subpath;
+                $canvas.beginPath if $canvas.path;
                 $canvas.restore while $canvas.gsave;
                 $canvas._finish;
             }
