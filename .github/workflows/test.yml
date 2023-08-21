@@ -42,7 +42,6 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=`pwd`/harfbuzz-8.1.1/src/.libs
           zef install --/test App::Prove6
-          zef install HarfBuzz::Subset
           zef --deps-only install .
       - name: Run Tests
         run: |
