@@ -5,6 +5,7 @@ plan 20;
 use PDF::Lite;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
+use PDF::Content;
 
 my HTML::Canvas $canvas .= new;
 my PDF::Lite $pdf .= new;

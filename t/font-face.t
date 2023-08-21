@@ -6,6 +6,7 @@ use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 use CSS::Font::Descriptor;
 use PDF::Lite;
+use PDF::Content;
 
 my CSS::Font::Descriptor $arial .= new: :font-family<arial>, :src<url(t/fonts/FreeMono.ttf)>;
 my HTML::Canvas $canvas .= new: :font-face[$arial];

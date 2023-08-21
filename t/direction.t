@@ -4,6 +4,7 @@ plan 1;
 use PDF::Lite;
 use HTML::Canvas;
 use HTML::Canvas::To::PDF;
+use PDF::Content;
 
 constant $LRM = 0x200E.chr;
 constant $LRO = 0x202D.chr;
