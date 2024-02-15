@@ -33,7 +33,7 @@ sub test-sheet(&markup) {
     my Bool $clean = True;
     $sheet-no++;
 
-    try {
+    do {
         $canvas.context(
             -> \ctx {
                 $y = 0;

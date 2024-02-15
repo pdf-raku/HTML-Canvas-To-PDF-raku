@@ -1,4 +1,6 @@
 {{$NEXT}}
+  - Strip bi-directional text and text-direction handling. Upgrade to
+    PDF::Content v0.8.0+, which does this for us.
 
 0.0.11  2023-08-22T05:32:48+12:00
   - Fixed tests

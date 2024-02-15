@@ -19,8 +19,6 @@ class HTML::Canvas::To::PDF:ver<0.0.11> {
     use PDF::Content::Ops :TextMode, :LineCaps, :LineJoin;
     use PDF::Content::XObject;
     use PDF::Content;
-    use Text::FriBidi::Defs :FriBidiPar;
-    use Text::FriBidi::Line;
     use CSS::Font;
 
     has HTML::Canvas $.canvas is rw .= new;
@@ -348,18 +346,17 @@ class HTML::Canvas::To::PDF:ver<0.0.11> {
         my LineJoin $lj = %( :miter(MiterJoin), :round(RoundJoin),  :bevel(BevelJoin)){$join-name};
         $!gfx.LineJoin = $lj;
     }
-    method !bidi(Str:D $text! --> Str) {
-        my UInt $direction = $!canvas.direction eq 'rtl'
-            ?? FRIBIDI_PAR_RTL
-            !! FRIBIDI_PAR_LTR;
-        my Text::FriBidi::Line $line .= new(:$text, :$direction);
-        $line.Str;
+    method !text-box(Str $text) {
+        my $align = $!canvas.textAlign;
+        my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
+        my $direction = $!canvas.direction;
+        $!gfx.text-box: :$text, :$align, :$baseline, :shape, :$direction;
     }
     method !text(Str $text, Numeric $x, Numeric $y, Numeric :$maxWidth) {
         my Numeric $scale = 100;
-        my $bidi = self!bidi: $text;
+        my $text-box = self!text-box($text);
         if $maxWidth {
-            my \width = $!canvas.measureText(Str, :$bidi).width;
+            my \width = $!canvas.measureText(Str, :$text-box).width;
             $scale = 100 * $maxWidth / width
                 if width > $maxWidth;
         }
@@ -367,15 +364,7 @@ class HTML::Canvas::To::PDF:ver<0.0.11> {
         $!gfx.BeginText;
         $!gfx.HorizScaling = $scale;
         $!gfx.text-position = self!coords($x, $y);
-        my \dir = $!canvas.direction;
-        my HTML::Canvas::Baseline $baseline = $!canvas.textBaseline;
-        my HTML::Canvas::TextAlignment $align = do given $!canvas.textAlign {
-            when 'start' { dir eq 'ltr' ?? 'left' !! 'right' }
-            when 'end'   { dir eq 'rtl' ?? 'left' !! 'right' }
-            default { $_ }
-        }
-
-        $!gfx.print($bidi, :$align, :$baseline);
+        $!gfx.print: $text-box;
         $!gfx.EndText;
     }
     method font(Str $font-style) {
@@ -397,8 +386,8 @@ class HTML::Canvas::To::PDF:ver<0.0.11> {
         self!text($text, $x, $y, :$maxWidth);
         $!gfx.Restore
     }
-    method measureText(Str $text, :$bidi = self!bidi($text) --> Numeric) {
-        $!canvas.adjusted-font-size: $!font.font-obj.stringwidth($bidi, $!font.em);
+    method measureText(Str $text, :$text-box = self!text-box($text) --> Numeric) {
+        $!canvas.adjusted-font-size: $text-box.width;
     }
     method !canvas-to-xobject(HTML::Canvas $image, Numeric :$width!, Numeric :$height! ) {
         $!cache.canvas{$image}{"$width,$height"} //= do {
