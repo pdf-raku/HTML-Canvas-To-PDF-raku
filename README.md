@@ -14,8 +14,8 @@ This back-end is **experimental**.
 This module is an alternative to [HTML::Canvas](https://raku.land/zef:dwarring/HTML::Canvas),
 which is also able to save complete PDF files via [Cairo](https://raku.land/github:timo/Cairo).
 
-It may be useful, if you wish to manipulate existing PDF files
-using the HTML Canvas API, or are wishing to integrate with
+It may be useful, for manipulating existing PDF files
+using the HTML Canvas API, or for integration with
 Raku PDF modules such as PDF::Lite or PDF::API6.
 
 If this module is installed, the PDF::Content `html-canvas()`
@@ -23,7 +23,7 @@ method will automatically render to a graphics stream using the
 `HTML::Canvas::To::PDF` back-end. The backend can thus be used on
 PDF Pages or XObject Forms:
 
-```
+```raku
 use v6;
 # Finish an existing PDF. Add a background color and page numbers
 
