@@ -28,7 +28,6 @@ my $pdf-cache = HTML::Canvas::To::PDF::Cache.new;
 sub test-sheet(&markup) {
     my HTML::Canvas $canvas .= new: :cache($cairo-cache), :$surface;
     my $gfx = $pdf.add-page.gfx;
-    $gfx.comment = True;
     my $feed = HTML::Canvas::To::PDF.new: :$gfx, :$canvas, :cache($pdf-cache);
     my Bool $clean = True;
     $sheet-no++;
@@ -686,7 +685,7 @@ test-sheet( -> \ctx {
 
 $surface.finish;
 
-$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
+$pdf.id = $*PROGRAM.basename.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/render-pdf-test-sheets.pdf")}, "pdf.save-as";
 
 my $html = "<html><body>" ~ @html-body.join ~ "</body></html>";

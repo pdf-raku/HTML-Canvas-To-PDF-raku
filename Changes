@@ -1,4 +1,5 @@
 {{$NEXT}}
+  - Require PDF::Font::Loader::HarfBuzz has a dependency.
 
 0.0.12  2024-02-15T14:02:20+13:00
   - Strip bi-directional text and text-direction handling. Upgrade to

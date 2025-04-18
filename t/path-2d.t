@@ -35,7 +35,7 @@ $canvas.context: -> \ctx {
 }
 
 # save canvas as as PDF
-$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
+$pdf.id = $*PROGRAM.basename.fmt('%-16.16s');
 lives-ok { $pdf.save-as: "t/path-2d.pdf" };
 my $html = "<html><body>{ $canvas.to-html( :width(612), :height(792) ) }</body></html>";
 "t/path-2d.html".IO.spurt: $html;

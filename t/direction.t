@@ -6,10 +6,10 @@ use HTML::Canvas;
 use HTML::Canvas::To::PDF;
 use PDF::Content;
 
-constant $LRM = 0x200E.chr;
-constant $LRO = 0x202D.chr;
-constant $RLO = 0x202E.chr;
-constant $PDF = 0x202C.chr;
+constant $LRM = "\c[LEFT-TO-RIGHT MARK]";
+constant $LRO = "\c[LEFT-TO-RIGHT OVERRIDE]";
+constant $RLO = "\c[RIGHT-TO-LEFT OVERRIDE]";
+constant $PDF = "\c[POP DIRECTIONAL FORMATTING]";
 
 my HTML::Canvas $canvas .= new;
 my PDF::Lite $pdf .= new;
@@ -48,7 +48,7 @@ $canvas.context: {
 }
 
 # ensure consistant document ID generation
-$pdf.id = $*PROGRAM-NAME.fmt('%-16.16s');
+$pdf.id = $*PROGRAM.basename.fmt('%-16.16s');
 lives-ok {$pdf.save-as("t/direction.pdf");}, "pdf.save-as";
 
 # also save comparative HTML
