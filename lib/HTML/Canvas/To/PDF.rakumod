@@ -1,4 +1,4 @@
-unit class HTML::Canvas::To::PDF:ver<0.0.12>;
+unit class HTML::Canvas::To::PDF:ver<0.0.13>;
 
 use HTML::Canvas :FillRule;
 use HTML::Canvas::Gradient;

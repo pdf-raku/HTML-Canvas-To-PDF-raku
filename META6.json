@@ -28,7 +28,7 @@
   },
   "resources": [
   ],
-  "source-url": "git://github.com/pdf-raku/HTML-Canvas-To-PDF-raku.git",
+  "source-url": "https://github.com/pdf-raku/HTML-Canvas-To-PDF-raku.git",
   "tags": [
     "html",
     "javascript",
@@ -36,5 +36,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.12"
+  "version": "0.0.13"
 }

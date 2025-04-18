@@ -30,7 +30,7 @@ jobs:
           brew install harfbuzz
           brew install fribidi
           brew reinstall freetype
-          brew install fontconfig
+          brew reinstall fontconfig
           # needed to deal with *.ttc (TrueType collections)
           zef install HarfBuzz::Subset
       - name: Install Raku Dependencies

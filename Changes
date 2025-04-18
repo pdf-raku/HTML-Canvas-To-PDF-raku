@@ -1,5 +1,8 @@
 {{$NEXT}}
+
+0.0.13  2025-04-19T10:24:13+12:00
   - Require PDF::Font::Loader::HarfBuzz as a dependency.
+  - Upgrade to HTML::Canvas v0.1.3+
 
 0.0.12  2024-02-15T14:02:20+13:00
   - Strip bi-directional text and text-direction handling. Upgrade to
