@@ -29,15 +29,14 @@ jobs:
           brew update
           brew install harfbuzz
           brew install fribidi
+          bree reinstall freetype
           # needed to deal with *.ttc (TrueType collections)
           zef install HarfBuzz::Subset
       - name: Install Raku Dependencies
         run: |
-          export LD_LIBRARY_PATH=`pwd`/harfbuzz-8.1.1/src/.libs
           zef install --/test App::Prove6
           zef --deps-only install .
       - name: Run Tests
         run: |
-          export LD_LIBRARY_PATH=`pwd`/harfbuzz-8.1.1/src/.libs
           prove6 -I. t
           zef install .
