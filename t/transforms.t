@@ -46,10 +46,6 @@ sub test-page(&markup) {
     @sheets.push: $canvas;
 }
 
-my \image = HTML::Canvas::Image.open("t/images/crosshair-100x100.jpg");
-
-@html-body.push: HTML::Canvas.to-html: image, :style("visibility:hidden");
-
 test-page(
     -> \ctx, \gfx {
         constant h = 100;
@@ -57,6 +53,9 @@ test-page(
 
         ctx.fillText("Testing Transforms", 20, $y += textHeight);
         $y += pad + 10;
+        my \image = HTML::Canvas::Image.open("t/images/crosshair-100x100.jpg");
+        @html-body.push: ctx.to-html: image, :style("visibility:hidden");
+
         my \pat = ctx.createPattern(image,'repeat');
         my $n;
 
