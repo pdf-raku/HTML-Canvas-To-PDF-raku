@@ -6,7 +6,7 @@
   "build-depends": [
   ],
   "depends": [
-    "HTML::Canvas:ver<0.1.2+>",
+    "HTML::Canvas:ver<0.1.3+>",
     "JSON::Fast",
     "PDF:ver<0.5.10+>",
     "PDF::Lite",
