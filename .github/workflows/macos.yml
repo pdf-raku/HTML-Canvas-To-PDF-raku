@@ -29,6 +29,7 @@ jobs:
           brew update
           brew install harfbuzz
           brew install fribidi
+          brew install cairo
           brew reinstall freetype
           brew reinstall fontconfig
           # needed to deal with *.ttc (TrueType collections)
@@ -36,8 +37,7 @@ jobs:
       - name: Install Raku Dependencies
         run: |
           zef install --/test App::Prove6
-          zef install PDF
-          zef --verbose install PDF::Content
+          zef install PDF::Content
           zef --deps-only install .
       - name: Run Tests
         run: |
