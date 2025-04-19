@@ -31,8 +31,6 @@ jobs:
           brew install fribidi
           brew reinstall freetype
           brew reinstall fontconfig
-          ls -l /opt/homebrew/include
-          ls -l /usr/local/include
           # needed to deal with *.ttc (TrueType collections)
           zef install HarfBuzz::Subset
       - name: Install Raku Dependencies
