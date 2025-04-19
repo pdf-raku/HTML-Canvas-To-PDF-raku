@@ -36,6 +36,8 @@ jobs:
       - name: Install Raku Dependencies
         run: |
           zef install --/test App::Prove6
+          zef install PDF
+          zef --verbose install PDF::Content
           zef --deps-only install .
       - name: Run Tests
         run: |
