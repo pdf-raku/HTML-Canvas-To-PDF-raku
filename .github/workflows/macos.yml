@@ -40,6 +40,8 @@ jobs:
           ensure-symlink-for cairo
           zef install --/test App::Prove6
           zef install PDF::Content
+          zef install CSS::Properties
+          zef --verbose install CSS::Font::Resources
           zef --deps-only install .
       - name: Run Tests
         run: |
