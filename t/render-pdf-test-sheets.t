@@ -20,10 +20,11 @@ my \pad = 10;
 my \textHeight = 20;
 
 # parallel dump of PDF rendered via Cairo backend
+"tmp".&mkdir;
 my $surface = Cairo::Surface::PDF.create("tmp/render-pdf-test-sheets-cairo.pdf", 612, 792);
 
-my $cairo-cache = HTML::Canvas::To::Cairo::Cache.new;
-my $pdf-cache = HTML::Canvas::To::PDF::Cache.new;
+my HTML::Canvas::To::Cairo::Cache $cairo-cache .= new;
+my HTML::Canvas::To::PDF::Cache $pdf-cache .= new;
 
 sub test-sheet(&markup) {
     my HTML::Canvas $canvas .= new: :cache($cairo-cache), :$surface;
@@ -37,7 +38,7 @@ sub test-sheet(&markup) {
             -> \ctx {
                 $y = 0;
                 ctx.font = "20pt times";
-                &markup(ctx);
+                ctx.&markup;
             });
 
         CATCH {
@@ -664,7 +665,7 @@ test-sheet( -> \ctx {
     ctx.drawImage(image,  20,  30,  50, 50);
     ctx.font = "10pt courier";
     ctx.fillText("some text", 20, 80);
-    my \imgData=ctx.getImageData(10,30,50,50);
+    my \imgData = ctx.getImageData(10,30,50,50);
 
     my $grad = ctx.createLinearGradient(0,0,200,200),
     $grad.addColorStop(0,"rgb(255,200,200)");
@@ -679,7 +680,7 @@ test-sheet( -> \ctx {
     ctx.putImageData(imgData, 40, $y);
 
     # re-get and re-put
-    my \imgData2=ctx.getImageData(35,$y-5,60,60);
+    my \imgData2 = ctx.getImageData(35,$y-5,60,60);
     ctx.putImageData(imgData2, 120, $y);
 });
 

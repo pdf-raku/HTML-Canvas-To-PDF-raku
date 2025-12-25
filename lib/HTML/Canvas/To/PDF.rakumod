@@ -58,7 +58,7 @@ submethod TWEAK(PDF :$pdf, :@font-face)  {
         $!height //= .height;
     }
 
-    with $!canvas {
+    given $!canvas {
         .font-face.append: @font-face;
         .callback.push: self.callback;
     }
