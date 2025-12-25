@@ -26,6 +26,7 @@ jobs:
       - name: Linux specific setup
         if: contains(matrix.os, 'ubuntu')
         run: |
+          sudo apt update
           sudo apt-get install -y libharfbuzz-dev
           sudo apt-get install -y libfribidi-dev
           sudo apt-get install -y libfreetype6-dev

@@ -36,6 +36,8 @@ jobs:
           zef install HarfBuzz::Subset
       - name: Install Raku Dependencies
         run: |
+          zef install MacOS::NativeLib
+          ensure-symlink-for cairo
           zef install --/test App::Prove6
           zef install PDF::Content
           zef --deps-only install .
